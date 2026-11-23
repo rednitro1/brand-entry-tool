@@ -17,11 +17,15 @@ export function makeFakeProviders({ speed = 1 } = {}) {
   const kira = rec('apollo-match-kira.json').person;
   const posts = rec('harvestapi-posts-kira.json').data.alexandria[0].data;
   const li = rec('orbisearch-linkedin-company-alani.json').data.alexandria[0].data;
+  // Bloom's page posts, re-dated so they land inside the 90-day window whenever this runs.
+  const company = rec('harvestapi-company-posts-bloom.json').data.alexandria[0].data;
+  const shift = Date.now() - new Date(company.elements[0].postedAt.date).getTime() - 2 * 864e5;
+  const companyNow = { ...company, elements: company.elements.map((e) => ({ ...e, postedAt: { ...e.postedAt, date: new Date(new Date(e.postedAt.date).getTime() + shift).toISOString() } })) };
   const page = (url) => `# ${url}\n\n${'Recorded page text used by the local fake mode. '.repeat(12)}`;
   const fc = () => ({
     async search(q) { await d(700, 1600); return q.startsWith('site:linkedin') ? [{ url: 'https://www.linkedin.com/company/alani-nutrition/' }] : searchRes; },
     async scrape(url, o) { await d(900, 2600); return o?.formats?.includes('links') ? { url, links } : { url, title: url, markdown: page(url) }; },
-    async alexandria(provider) { await d(2000, 4500); return provider === 'harvestapi' ? posts : li; },
+    async alexandria(provider, capability) { await d(2000, 4500); return capability === 'linkedin/company-posts' ? companyNow : provider === 'harvestapi' ? posts : li; },
     usage: () => ({ costUsd: 0 }),
   });
   return {
@@ -49,8 +53,34 @@ export function makeFakeProviders({ speed = 1 } = {}) {
   };
 }
 
+/* Stand-in for Claude on the drafting step: picks the first three candidate posts and
+   writes placeholder copy that cites real evidence ids, so the UI and validator run. */
+export function makeFakeDraftClaude() {
+  return {
+    async structured({ system, user }) {
+      await jitter(2500, 4500);
+      if (/choose which recent posts/.test(system)) {
+        const ids = [...new Set(user.match(/\[post:\d+\]/g) || [])].map((x) => x.slice(1, -1));
+        return { parsed: { picks: ids.slice(0, 3).map((id) => ({ post_id: id, reason: 'FAKE MODE: first candidate in rank order.' })) } };
+      }
+      const picked = (user.split('OTHER RECENT POSTS')[0].match(/\[post:\d+\]/g) || []).map((x) => x.slice(1, -1));
+      const stat = (user.match(/\[stat:instagram\.followers\]/) || user.match(/\[stat:[a-z]+\.followers\]/) || [''])[0].slice(1, -1);
+      return {
+        parsed: {
+          comments: picked.slice(0, 3).map((id) => ({ post_id: id, text: 'FAKE MODE comment: reacting to what this post actually says.', evidence: [id] })),
+          own_post: { text: 'FAKE MODE own post. Food and beverage brands like Fishwife use Nectar to find creators, and at e.l.f. Beauty DM replies went from 11 hours to 9 minutes.', evidence: ['proof:p9', 'proof:p4'], closest_category_used: 'food and beverage' },
+          connection_request: { text: 'FAKE MODE connection note grounded in their public page stats.', evidence: stat ? [stat] : ['person:1'] },
+          first_dm: { text: 'FAKE MODE first DM. Can I send a short Loom on how e.l.f. Beauty cut DM replies from 11 hours to 9 minutes?', evidence: ['proof:p4'] },
+          notes_for_ben: 'Fake mode: placeholder copy, no model was called.',
+        },
+      };
+    },
+    usage: () => ({ costUsd: 0, input: 0, output: 0 }),
+  };
+}
+
 export function makeMemDb() {
-  const t = { brands: [], runs: [], modules: [], profiles: [], people: [], posts: [], social: [] };
+  const t = { brands: [], runs: [], modules: [], profiles: [], people: [], posts: [], social: [], brandPosts: [], playbooks: [], drafts: [] };
   const now = () => new Date().toISOString();
   const id = () => crypto.randomUUID();
   return {
@@ -69,11 +99,14 @@ export function makeMemDb() {
       }));
     },
     async listRuns() {
-      return [...t.runs].reverse().map((r) => ({
+      const brandOf = (bid) => { const b = t.brands.find((x) => x.id === bid); return b ? { name: b.name, slug: b.slug } : null; };
+      const drafts = [...t.drafts].reverse().map((x) => ({ id: x.id, kind: 'draft', brand: brandOf(x.brand_id), status: x.status, cost_usd: 0, started_at: x.created_at, finished_at: x.finished_at, created_at: x.created_at, modules: [] }));
+      return [...drafts, ...[...t.runs].reverse().map((r) => ({
+        kind: 'run',
         id: r.id, brand: t.brands.find((b) => b.id === r.brand_id) ? { name: t.brands.find((b) => b.id === r.brand_id).name, slug: t.brands.find((b) => b.id === r.brand_id).slug } : null,
         status: r.status, cost_usd: 0, started_at: r.started_at, finished_at: r.finished_at, created_at: r.created_at,
         modules: t.modules.filter((m) => m.run_id === r.id).map((m) => ({ module: m.module, status: m.status, cost_usd: 0 })),
-      }));
+      }))].sort((a, b) => String(b.created_at).localeCompare(String(a.created_at)));
     },
     async createRun({ input, modules }) {
       const run = { id: id(), input, status: 'running', brand_id: null, cost_usd: 0, started_at: now(), finished_at: null, created_at: now(), error: null };
@@ -90,7 +123,17 @@ export function makeMemDb() {
       const b = t.brands.find((x) => x.id === run.brand_id);
       return { ...run, brand: b ? { slug: b.slug, name: b.name } : null, modules: t.modules.filter((m) => m.run_id === runId).map((m) => ({ ...m, log: [...m.log] })) };
     },
-    async spendToday() { return { spentTodayUsd: 0, activeRuns: t.runs.filter((r) => r.status === 'running').length }; },
+    async spendToday() { return { spentTodayUsd: 0, activeRuns: t.runs.filter((r) => r.status === 'running').length, activeDrafts: t.drafts.filter((r) => r.status === 'running').length }; },
+    async getBrandBySlug(slug) { return t.brands.find((b) => b.slug === slug) || null; },
+    async saveBrandPosts(brandId, platform, posts) {
+      t.brandPosts = t.brandPosts.filter((p) => !(p.brand_id === brandId && posts.some((x) => x.id === p.id)));
+      t.brandPosts.push(...posts.map((p) => ({ brand_id: brandId, platform, id: p.id, url: p.url, caption: p.text, posted_at: p.posted_at, likes: p.reactions, comments: p.comments, is_repost: p.is_repost, author: p.author })));
+    },
+    async getPlaybook() { return t.playbooks.at(-1) || null; },
+    async savePlaybook(content, note) { const row = { id: id(), content, note, created_at: now() }; t.playbooks.push(row); return row; },
+    async createDraft({ brandId, model, picks = [], playbookId = null }) { const row = { id: id(), brand_id: brandId, model, status: 'running', output: {}, picks, rejected_claims: [], cost_usd: 0, playbook_id: playbookId, created_at: now(), finished_at: null, error: null }; t.drafts.push(row); return row; },
+    async finishDraft(draftId, { status, output = {}, picks = [], rejected = [], costUsd = 0, error = null }) { Object.assign(t.drafts.find((x) => x.id === draftId), { status, output, picks, rejected_claims: rejected, cost_usd: costUsd, error, finished_at: now() }); },
+    async getDraft(draftId) { return t.drafts.find((x) => x.id === draftId) || null; },
     async failOrphanedRuns() {},
     async saveProfile(brandId, runId, p) { t.profiles.push({ id: id(), brand_id: brandId, run_id: runId, created_at: now(), ...p }); },
     async saveStakeholders(brandId, runId, list) {
@@ -109,7 +152,9 @@ export function makeMemDb() {
         .map((p) => ({ ...p, stakeholder_posts: t.posts.filter((x) => x.stakeholder_id === p.id) }));
       const social = t.social.filter((s) => s.brand_id === brand.id);
       const lastRun = [...t.runs].reverse().find((r) => r.brand_id === brand.id) || null;
-      return { brand, profile, stakeholders, social, lastRun };
+      const brandPosts = t.brandPosts.filter((p) => p.brand_id === brand.id).sort((a, b) => String(b.posted_at).localeCompare(String(a.posted_at)));
+      const draft = [...t.drafts].reverse().find((x) => x.brand_id === brand.id) || null;
+      return { brand, profile, stakeholders, social, lastRun, brandPosts, draft };
     },
   };
 }

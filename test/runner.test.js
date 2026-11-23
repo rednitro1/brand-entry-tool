@@ -7,7 +7,7 @@ const rec = (f) => JSON.parse(fs.readFileSync(new URL(`../fixtures/recorded/${f}
 
 // In-memory STUB db that records every write.
 function memDb() {
-  const s = { modules: {}, run: null, brands: [], profiles: [], people: [], posts: [], social: [] };
+  const s = { modules: {}, run: null, brands: [], profiles: [], people: [], posts: [], social: [], brandPosts: [] };
   return {
     s,
     async updateModule(_r, m, patch) { s.modules[m] = { ...(s.modules[m] || {}), ...patch }; },
@@ -18,6 +18,7 @@ function memDb() {
     async saveStakeholders(_b, _r, list) { s.people.push(...list); return list.map((x, i) => ({ id: `p${i}`, linkedin_url: x.linkedin_url })); },
     async saveStakeholderPosts(id, posts) { s.posts.push([id, posts.length]); },
     async saveSocialAccount(_b, a) { s.social.push(a); },
+    async saveBrandPosts(_b, platform, posts) { s.brandPosts.push(...posts.map((p) => ({ platform, ...p }))); },
   };
 }
 
@@ -26,13 +27,14 @@ const links = rec('firecrawl-scrape-alani-links.json').data.links;
 const kira = rec('apollo-match-kira.json').person;
 const postsPayload = rec('harvestapi-posts-kira.json').data.alexandria[0].data;
 const liStats = rec('orbisearch-linkedin-company-alani.json').data.alexandria[0].data;
+const companyPosts = rec('harvestapi-company-posts-bloom.json').data.alexandria[0].data;
 
 // STUB providers: recorded payloads, no network.
 function stubProviders({ profileThrows = false } = {}) {
   const fc = () => ({
     async search(q) { return q.startsWith('site:linkedin') ? [{ url: 'https://www.linkedin.com/company/alani-nutrition/' }] : searchRes; },
     async scrape(url) { return { url, links, markdown: '' }; },
-    async alexandria(provider) { return provider === 'harvestapi' ? postsPayload : liStats; },
+    async alexandria(provider, capability) { return capability === 'linkedin/company-posts' ? companyPosts : provider === 'harvestapi' ? postsPayload : liStats; },
     usage: () => ({ costUsd: 0.01 }),
   });
   return {
@@ -93,4 +95,12 @@ test('executeRun (stub): every module ends with progress 1 and plain-English log
   assert.ok(all.some((l) => l.includes('Found Kira Lazzarini, Director of Social Media') && l.includes('(wedge persona: Director of Social)')));
   assert.ok(all.some((l) => l.includes('LinkedIn @alani-nutrition: 74,397 followers')));
   assert.ok(!all.some((l) => /@\S+\.(com|co)\b/.test(l) && l.includes('email')), 'no emails in the log');
+});
+
+test('executeRun (stub): brand LinkedIn page posts are saved with the run', async () => {
+  const db = memDb();
+  await executeRun({ db, runId: 'r10', input: 'Alani Nu', providers: stubProviders() });
+  assert.equal(db.s.brandPosts.length, 50);
+  assert.ok(db.s.brandPosts.every((p) => p.platform === 'linkedin' && p.url));
+  assert.equal(db.s.modules.social.detail.page_posts, 50);
 });

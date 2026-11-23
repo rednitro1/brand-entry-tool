@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { summarizeBrands, shapeRuns } from '../server/db.js';
+import { summarizeBrands, shapeRuns, shapeDrafts } from '../server/db.js';
 
 test('shapeRuns: no ip hash or raw input leaks, costs numeric, modules attached', () => {
   const out = shapeRuns(
@@ -33,4 +33,15 @@ test('summarizeBrands: owner from latest profile, wedge count from latest stakeh
   assert.equal(out[0].people_count, 2);
   assert.equal(out[1].owner, null);
   assert.equal(out[1].wedge_count, 0);
+});
+
+test('shapeDrafts: engagement drafts appear on Spend with their brand and cost, tagged as drafts', () => {
+  const out = shapeDrafts(
+    [{ id: 'd1', brand_id: 'b1', status: 'done', cost_usd: '0.0712', created_at: '2026-11-22T10:00:00Z', finished_at: '2026-11-22T10:00:40Z' }],
+    [{ id: 'b1', name: 'Bloom Nutrition Llc', slug: 'bloom-nutrition-llc' }],
+  );
+  assert.deepEqual(out[0], {
+    id: 'd1', kind: 'draft', brand: { name: 'Bloom Nutrition Llc', slug: 'bloom-nutrition-llc' }, status: 'done', cost_usd: 0.0712,
+    started_at: '2026-11-22T10:00:00Z', finished_at: '2026-11-22T10:00:40Z', created_at: '2026-11-22T10:00:00Z', modules: [],
+  });
 });

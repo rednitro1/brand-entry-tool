@@ -5,7 +5,7 @@ import { makeApify } from './providers/apify.js';
 import { resolveBrand } from './modules/resolve.js';
 import { buildProfile } from './modules/profile.js';
 import { findStakeholders, PERSONAS } from './modules/stakeholders.js';
-import { fetchRecentPosts } from './modules/linkedinPosts.js';
+import { fetchRecentPosts, fetchCompanyPosts, withinDays } from './modules/linkedinPosts.js';
 import { pullPageStats } from './modules/social.js';
 
 /* One run = resolve, then profile / stakeholders / social in parallel. Each module gets
@@ -13,7 +13,7 @@ import { pullPageStats } from './modules/social.js';
    can fail without stopping the others (the UI shows a labeled gap). */
 
 export const MODULES = ['resolve', 'profile', 'stakeholders', 'social'];
-const MAX_PEOPLE_WITH_POSTS = 3;
+const MAX_PEOPLE_WITH_POSTS = 12; // every stakeholder, with a safety cap (about half a cent each)
 
 export function defaultProviders(env = process.env) {
   const limiter = makeLimiter(3); // one Firecrawl account: share its rate limit across modules
@@ -123,15 +123,18 @@ export async function executeRun({ db, runId, input, providers = defaultProvider
       // Recent public posts for the top few wedge-persona people only (cost cap).
       const ranked = [...stakeholders].sort((a, b) => rank(a.persona) - rank(b.persona)).slice(0, MAX_PEOPLE_WITH_POSTS);
       const posts = new Map();
-      if (ranked.length) log(`Reading recent LinkedIn posts for ${ranked.map((s) => s.full_name).join(', ')}`);
-      for (const [i, s] of ranked.entries()) {
+      if (ranked.length) log(`Reading recent LinkedIn posts for all ${ranked.length} people`);
+      let done = 0;
+      // Parallel; the shared Firecrawl limiter keeps it inside the rate limit.
+      await Promise.all(ranked.map(async (s) => {
         try {
           const p = await fetchRecentPosts({ fc, profileUrl: s.linkedin_url, name: s.full_name, log });
           s.post_pattern = p.pattern;
           posts.set(s.linkedin_url, p.posts);
+          if (!p.posts.some((x) => withinDays(x.posted_at))) log(`${s.full_name}: no posts in the last 3 months`);
         } catch (err) { log(`Couldn't read posts for ${s.full_name}: ${err.message}`); }
-        log.progress?.(0.6 + 0.35 * ((i + 1) / ranked.length));
-      }
+        log.progress?.(0.6 + 0.35 * (++done / ranked.length));
+      }));
       log('Saving stakeholders');
       const saved = await db.saveStakeholders(brandRow.id, runId, stakeholders);
       for (const row of saved) if (posts.has(row.linkedin_url)) await db.saveStakeholderPosts(row.id, posts.get(row.linkedin_url));
@@ -145,15 +148,23 @@ export async function executeRun({ db, runId, input, providers = defaultProvider
 
     runModule(db, runId, 'social', async (log) => {
       const apify = providers.apify(); const fc = providers.firecrawl();
-      const rows = await pullPageStats({ socials: brand.socials, apify, fc, log });
+      const [rows, pagePosts] = await Promise.all([
+        pullPageStats({ socials: brand.socials, apify, fc, log }),
+        brand.socials?.linkedin?.url
+          ? (log(`Reading ${brand.name}'s LinkedIn page posts`),
+            fetchCompanyPosts({ fc, companyUrl: brand.socials.linkedin.url, name: brand.name, log })
+              .catch((err) => { log(`Couldn't read ${brand.name}'s LinkedIn page posts, continuing with a gap: ${err.message}`); return null; }))
+          : Promise.resolve(null),
+      ]);
       log('Saving page stats');
       for (const row of rows) await db.saveSocialAccount(brandRow.id, row);
+      if (pagePosts) await db.saveBrandPosts(brandRow.id, 'linkedin', pagePosts);
       const failed = rows.filter((x) => x.error).length;
       return {
         result: rows,
         costUsd: sumCost(apify.usage(), fc.usage()),
         status: failed === rows.length ? 'failed' : 'done',
-        detail: { platforms: rows.map((x) => ({ platform: x.platform, followers: x.followers, error: x.error })) },
+        detail: { platforms: rows.map((x) => ({ platform: x.platform, followers: x.followers, error: x.error })), page_posts: pagePosts ? pagePosts.length : null },
       };
     }),
   ]);

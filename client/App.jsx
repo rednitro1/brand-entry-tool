@@ -40,12 +40,14 @@ function currentRoute() {
   if (parts[0] === 'accounts' && parts[1]) return { page: 'account', slug: decodeURIComponent(parts[1]) };
   if (parts[0] === 'accounts') return { page: 'accounts' };
   if (parts[0] === 'spend') return { page: 'spend' };
+  if (parts[0] === 'playbook') return { page: 'playbook' };
   return { page: 'search' };
 }
 function pathFor(r) {
   if (r.page === 'account') return `/accounts/${encodeURIComponent(r.slug)}`;
   if (r.page === 'accounts') return '/accounts';
   if (r.page === 'spend') return '/spend';
+  if (r.page === 'playbook') return '/playbook';
   return '/';
 }
 
@@ -73,13 +75,14 @@ export default function App() {
         {route.page === 'accounts' && <AccountsPage go={go} live={live} />}
         {route.page === 'account' && <AccountPage slug={route.slug} go={go} live={live} />}
         {route.page === 'spend' && <SpendPage go={go} live={live} />}
+        {route.page === 'playbook' && <PlaybookPage />}
       </main>
     </div>
   );
 }
 
 function Sidebar({ tab, go, live }) {
-  const items = [['search', 'Search', IconSearch], ['accounts', 'Accounts', IconList], ['spend', 'Spend', IconCoins]];
+  const items = [['search', 'Search', IconSearch], ['accounts', 'Accounts', IconList], ['playbook', 'Playbook', IconBook], ['spend', 'Spend', IconCoins]];
   return (
     <aside className="sidebar">
       <a className="brandmark" href="/" onClick={(e) => { e.preventDefault(); go({ page: 'search' }); }}>
@@ -364,7 +367,12 @@ function AccountsPage({ go, live }) {
 }
 
 function AccountPage({ slug, go, live }) {
-  const { data: b, err } = useLiveData(() => api.brand(slug), [slug, live.finished], (d) => ['running', 'queued'].includes(d?.lastRun?.status));
+  const [kick, setKick] = useState(0); // bumped after starting a draft so polling restarts
+  const { data: b, err } = useLiveData(() => api.brand(slug), [slug, live.finished, kick],
+    (d) => ['running', 'queued'].includes(d?.lastRun?.status) || d?.draft?.status === 'running');
+  const [picking, setPicking] = useState(false);
+  const [selected, setSelected] = useState([]);
+  useEffect(() => { setPicking(false); setSelected([]); }, [slug]);
   if (err) return <section className="page"><p className="error">{err}</p></section>;
   if (!b || b.brand?.slug !== slug) return <section className="page"><p className="muted">Loading…</p></section>;
 
@@ -421,6 +429,14 @@ function AccountPage({ slug, go, live }) {
           </table>
         </div>
       </div>
+
+      <LinkedInActivity b={b} picking={picking} selected={selected}
+        onToggle={(url) => setSelected((cur) => (cur.includes(url) ? cur.filter((u) => u !== url) : cur.length >= 3 ? cur : [...cur, url]))} />
+
+      <EngagementPlan b={b} slug={slug} go={go} picking={picking} selected={selected}
+        startPicking={() => { setSelected((b.draft?.picks || []).map((p) => p.url)); setPicking(true); }}
+        stopPicking={() => setPicking(false)}
+        onStarted={() => { setPicking(false); setKick((k) => k + 1); }} />
 
       <div className="card">
         <h2>Social pages</h2>
@@ -481,6 +497,276 @@ function AccountPage({ slug, go, live }) {
       )}
     </section>
   );
+}
+
+/* ----------------------------- LinkedIn activity ---------------------------- */
+
+const DAY = 864e5;
+const within90 = (iso) => Boolean(iso) && Date.now() - new Date(iso) < 90 * DAY && new Date(iso) <= new Date();
+const ago = (iso) => {
+  if (!iso) return '—';
+  const d = Math.floor((Date.now() - new Date(iso)) / DAY);
+  if (d < 1) return 'today';
+  if (d < 14) return `${d}d ago`;
+  if (d < 60) return `${Math.floor(d / 7)}w ago`;
+  if (d < 730) return `${Math.floor(d / 30)}mo ago`;
+  return `${Math.floor(d / 365)}y ago`;
+};
+
+/* Same merge as the server: person posts + brand page posts, one copy per URL (a
+   team member's repost of a brand post counts as the team copy). */
+function allPosts(b) {
+  const out = [];
+  for (const s of b.stakeholders || []) {
+    for (const p of s.stakeholder_posts || []) {
+      out.push({ url: p.url, posted_at: p.posted_at, text: p.text || '', is_repost: p.is_repost, reactions: p.reactions, comments: p.comments,
+        source: WEDGE.includes(s.persona) ? 'wedge' : 'team', author: s.full_name, persona: s.persona });
+    }
+  }
+  for (const p of b.brandPosts || []) {
+    out.push({ url: p.url, posted_at: p.posted_at, text: p.caption || '', is_repost: p.is_repost, reactions: p.likes, comments: p.comments,
+      source: 'brand', author: `${b.brand.name} page`, persona: null });
+  }
+  const byUrl = new Map();
+  const w = { wedge: 3, team: 2, brand: 1 };
+  for (const p of out) { const prev = byUrl.get(p.url); if (!prev || w[p.source] > w[prev.source]) byUrl.set(p.url, p); }
+  return [...byUrl.values()].sort((a, c) => String(c.posted_at || '').localeCompare(String(a.posted_at || '')));
+}
+
+const SOURCE_TEXT = { wedge: 'Wedge persona', team: 'Team', brand: 'Brand page' };
+
+function LinkedInActivity({ b, picking, selected, onToggle }) {
+  const [filter, setFilter] = useState('90');
+  const [limit, setLimit] = useState(12);
+  const posts = allPosts(b);
+  // Counts per author over the last 3 months, including people with none.
+  const authors = [
+    { key: 'brand', name: `${b.brand.name} page`, source: 'brand' },
+    ...b.stakeholders.map((s) => ({ key: s.id, name: s.full_name, source: WEDGE.includes(s.persona) ? 'wedge' : 'team', persona: s.persona })),
+  ].map((a) => ({ ...a, count: posts.filter((p) => (a.source === 'brand' ? p.source === 'brand' : p.author === a.name) && within90(p.posted_at)).length }))
+    .sort((a, c) => (c.source === 'wedge') - (a.source === 'wedge') || c.count - a.count);
+  const shown = posts.filter((p) => (filter === 'all' ? true : filter === '90' ? within90(p.posted_at) : p.source === filter && within90(p.posted_at)));
+  const pulled = b.brandPosts?.length || b.stakeholders.some((s) => (s.stakeholder_posts || []).length);
+
+  return (
+    <div className="card">
+      <div className="card-head">
+        <h2>LinkedIn activity</h2>
+        <span className="muted small">{posts.filter((p) => within90(p.posted_at)).length} posts in the last 3 months</span>
+      </div>
+      {!pulled ? (
+        <p className="muted">No LinkedIn posts pulled yet. A new research run pulls posts for every stakeholder and the brand page.</p>
+      ) : (
+        <>
+          <div className="authors">
+            {authors.map((a) => (
+              <div key={a.key} className={`author${a.source === 'wedge' ? ' is-wedge' : ''}${a.count === 0 ? ' is-quiet' : ''}`}>
+                <strong>{a.count}</strong>
+                <span className="author-name">{a.name}</span>
+                <span className="author-kind">{a.source === 'wedge' ? `Wedge · ${PERSONA_TEXT[a.persona]}` : SOURCE_TEXT[a.source]}</span>
+              </div>
+            ))}
+          </div>
+          <div className="filters" role="tablist" aria-label="Filter posts">
+            {[['90', 'Last 3 months'], ['wedge', 'Wedge'], ['team', 'Team'], ['brand', 'Brand page'], ['all', 'All time']].map(([k, label]) => (
+              <button key={k} role="tab" aria-selected={filter === k} className={`chipbtn${filter === k ? ' on' : ''}`} onClick={() => { setFilter(k); setLimit(12); }}>{label}</button>
+            ))}
+          </div>
+          {picking && <p className="pickhint">Choose up to 3 posts to engage with ({selected.length}/3). Fewer than 3 and the AI fills the rest.</p>}
+          {shown.length === 0 ? <p className="muted small">No posts for this filter.</p> : (
+            <ul className="feed">
+              {shown.slice(0, limit).map((p) => {
+                const on = selected.includes(p.url);
+                const canPick = picking && p.text.trim().length >= 40 && within90(p.posted_at);
+                return (
+                  <li key={p.url} className={`post s-${p.source}${on && picking ? ' picked' : ''}`}>
+                    <div className="post-meta">
+                      <span className="when">{ago(p.posted_at)}</span>
+                      <span className="who">{p.author}</span>
+                      <span className={`kind k-${p.source}`}>{SOURCE_TEXT[p.source]}</span>
+                      {p.is_repost && <span className="kind">Repost</span>}
+                      <span className="eng">{p.reactions ?? '—'} reactions · {p.comments ?? '—'} comments</span>
+                      <a href={p.url} target="_blank" rel="noreferrer">Open</a>
+                      {canPick && (
+                        <label className="pick"><input type="checkbox" checked={on} disabled={!on && selected.length >= 3} onChange={() => onToggle(p.url)} /> Engage</label>
+                      )}
+                    </div>
+                    <Excerpt text={p.text} />
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+          {shown.length > limit && <button className="link more" onClick={() => setLimit(limit + 20)}>Show {Math.min(20, shown.length - limit)} more</button>}
+        </>
+      )}
+    </div>
+  );
+}
+
+function Excerpt({ text, n = 220 }) {
+  const [open, setOpen] = useState(false);
+  if (!text?.trim()) return <p className="excerpt muted small">No text (image or share only).</p>;
+  const long = text.length > n;
+  return (
+    <p className="excerpt">
+      {open ? text : long ? `${text.replace(/\s*\n\s*/g, ' ').slice(0, n).trimEnd()}…` : text.replace(/\n{2,}/g, '\n')}
+      {long && <button className="link" onClick={() => setOpen(!open)}>{open ? 'less' : 'more'}</button>}
+    </p>
+  );
+}
+
+/* ----------------------------- engagement plan ------------------------------ */
+
+/* Clipboard API first; some browsers and embedded views block it, so fall back to the
+   classic hidden-textarea copy. If both fail, say so instead of pretending. */
+async function copyText(text) {
+  try { await navigator.clipboard.writeText(text); return true; } catch { /* fall through */ }
+  try {
+    const ta = document.createElement('textarea');
+    ta.value = text; ta.setAttribute('readonly', ''); ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.appendChild(ta); ta.select();
+    const ok = document.execCommand('copy');
+    document.body.removeChild(ta);
+    return ok;
+  } catch { return false; }
+}
+
+function CopyButton({ text }) {
+  const [state, setState] = useState('');
+  return (
+    <button className="copy" onClick={async () => {
+      setState((await copyText(text)) ? 'Copied' : 'Select and copy');
+      setTimeout(() => setState(''), 1800);
+    }}>{state || 'Copy'}</button>
+  );
+}
+
+function Evidence({ ids = [], index = {} }) {
+  if (!ids.length) return null;
+  return (
+    <div className="evidence">
+      {ids.filter((id) => index[id]).map((id) => {
+        const e = index[id];
+        const label = `${e.kind === 'proof' ? 'Proof' : e.kind === 'stat' ? 'Stat' : e.kind === 'fact' ? 'Fact' : e.kind === 'person' ? 'Person' : 'Post'}: ${e.label}`;
+        return e.url
+          ? <a key={id} className="ev" href={e.url} target="_blank" rel="noreferrer" title={e.text}>{label}</a>
+          : <span key={id} className="ev" title={e.text}>{label}</span>;
+      })}
+    </div>
+  );
+}
+
+function Draft({ title, sub, text, ids, index, extra }) {
+  return (
+    <div className="draft">
+      <div className="draft-head"><h3>{title}</h3>{sub && <span className="muted small">{sub}</span>}<CopyButton text={text} /></div>
+      <p className="draft-text">{text}</p>
+      {extra}
+      <Evidence ids={ids} index={index} />
+    </div>
+  );
+}
+
+function EngagementPlan({ b, slug, go, picking, selected, startPicking, stopPicking, onStarted }) {
+  const [code, setCode] = useState(safeStore.get('accessCode'));
+  const [err, setErr] = useState('');
+  const [busy, setBusy] = useState(false);
+  const d = b.draft;
+  const running = d?.status === 'running';
+  const o = d?.status === 'done' ? d.output : null;
+
+  async function start(pickUrls = []) {
+    setErr(''); setBusy(true);
+    try { safeStore.set('accessCode', code); await api.draft(slug, pickUrls, code); onStarted(); } catch (ex) { setErr(ex.message); } finally { setBusy(false); }
+  }
+
+  const controls = (
+    <div className="plan-actions">
+      {!code && <input className="code" value={code} onChange={(e) => setCode(e.target.value)} type="password" placeholder="Access code" aria-label="Access code" />}
+      {picking ? (
+        <>
+          <button className="pill" disabled={busy || running} onClick={() => start(selected)}>{busy ? 'Starting…' : selected.length === 0 ? 'Redraft with AI picks' : selected.length === 1 ? 'Redraft with your pick' : `Redraft with your ${selected.length} picks`}</button>
+          <button className="pill ghost" onClick={stopPicking}>Cancel</button>
+        </>
+      ) : (
+        <>
+          <button className="pill" disabled={busy || running} onClick={() => start([])}>{busy ? 'Starting…' : o || d?.status === 'failed' ? 'Redraft' : 'Draft engagement plan'}</button>
+          {o && <button className="pill ghost" disabled={running} onClick={startPicking}>Swap posts</button>}
+        </>
+      )}
+    </div>
+  );
+
+  return (
+    <div className="card plan">
+      <div className="card-head">
+        <h2>Engagement plan</h2>
+        <span className="muted small">Copy only. Nothing is posted, sent or connected for you.</span>
+      </div>
+
+      {running && (
+        <div className="banner"><span className="spinner" aria-hidden="true" /><span>Drafting comments, your post, the connection request and the first DM. Usually under a minute; you can leave this page.</span></div>
+      )}
+      {d?.status === 'failed' && <p className="error">The draft failed: {d.error}</p>}
+      {err && <p className="error">{err}</p>}
+
+      {!d && !running && (
+        <p className="muted">Picks three recent posts to engage with this week, then drafts a comment for each, a post for your own page, a connection request and a first DM to {chooseTargetName(b)}, grounded in the research and your <a href="/playbook" onClick={(e) => { e.preventDefault(); go({ page: 'playbook' }); }}>Playbook</a>.</p>
+      )}
+
+      {o && (
+        <>
+          {o.playbook_status === 'seed' && (
+            <p className="note-line">Drafted from the seed Playbook. Add your own example comments and DMs in <a href="/playbook" onClick={(e) => { e.preventDefault(); go({ page: 'playbook' }); }}>Playbook</a> to make the copy sound like you.</p>
+          )}
+          {(o.problems || []).length > 0 && (
+            <div className="flags">
+              <strong>Check before using ({o.problems.length}):</strong>
+              <ul>{o.problems.map((p, i) => <li key={i}>{p.where}: {p.issue}</li>)}</ul>
+            </div>
+          )}
+
+          <h3 className="plan-step">1. Engage with these three posts this week</h3>
+          <div className="picks">
+            {o.picks.map((p, i) => (
+              <div key={p.url} className={`pickcard s-${p.source}`}>
+                <div className="post-meta">
+                  <span className="num">{i + 1}</span>
+                  <span className="who">{p.author}</span>
+                  <span className={`kind k-${p.source}`}>{SOURCE_TEXT[p.source]}</span>
+                  {p.is_repost && <span className="kind">Repost</span>}
+                  <span className="when">{ago(p.posted_at)}</span>
+                  <a href={p.url} target="_blank" rel="noreferrer">Open post</a>
+                </div>
+                <Excerpt text={p.excerpt} n={180} />
+                <p className="why"><span>{p.by === 'ben' ? 'Your pick' : 'Why'}:</span> {p.reason}</p>
+                <Draft title="Your comment" text={p.comment.text} ids={p.comment.evidence} index={o.evidence} />
+              </div>
+            ))}
+          </div>
+
+          <h3 className="plan-step">2. Post this on your own page</h3>
+          <Draft title="Your post" sub="Never names the brand" text={o.own_post.text} ids={o.own_post.evidence} index={o.evidence}
+            extra={o.own_post.needs_proof && <p className="note-line">No {o.own_post.closest_category_used || 'same-category'} customer result with a number is in the Playbook yet, so the numbers here come from other categories. Add one in Playbook if you have it.</p>} />
+
+          <h3 className="plan-step">3. Connect with {o.target.name}</h3>
+          <p className="muted small target">{o.target.title}{o.target.fallback ? ' (no wedge persona found; most senior team member)' : ` · ${PERSONA_TEXT[o.target.persona] || ''}`}{o.target.linkedin_url && <> · <a href={o.target.linkedin_url} target="_blank" rel="noreferrer">LinkedIn</a></>}</p>
+          <Draft title="Connection request" sub={`${o.connection_request.chars}/${o.connection_request.limit} characters`} text={o.connection_request.text} ids={o.connection_request.evidence} index={o.evidence} />
+          <Draft title="First DM (after they accept)" text={o.first_dm.text} ids={o.first_dm.evidence} index={o.evidence} />
+
+          {o.notes_for_ben && <p className="note-line"><strong>Notes:</strong> {o.notes_for_ben}</p>}
+          <p className="muted small">Drafted {day(d.finished_at)} with {d.model} · {usd(d.cost_usd)}</p>
+        </>
+      )}
+      {controls}
+    </div>
+  );
+}
+
+function chooseTargetName(b) {
+  for (const p of WEDGE) { const s = b.stakeholders.find((x) => x.persona === p); if (s) return s.full_name; }
+  return 'the most senior person found';
 }
 
 function Summary({ points, factById }) {
@@ -545,6 +831,157 @@ function Label({ value }) {
   return <span className={`label l-${value}`}>{LABEL_TEXT[value] || value}</span>;
 }
 
+/* --------------------------------- playbook -------------------------------- */
+
+const lines = (arr) => (arr || []).join('\n');
+// While editing keep every line (so Enter works); empties are dropped on save.
+const unlines = (s) => String(s || '').split('\n');
+const blocks = (arr) => (arr || []).join('\n---\n');
+const unblocks = (s) => String(s || '').split(/\n---\n/);
+const tidy = (arr) => (arr || []).map((x) => String(x).trim()).filter(Boolean);
+function cleanPlaybook(pb) {
+  return {
+    ...pb,
+    product: { ...pb.product, value_props: tidy(pb.product.value_props), pains: tidy(pb.product.pains) },
+    voice: { tone: tidy(pb.voice.tone), use: tidy(pb.voice.use) },
+    banned: tidy(pb.banned),
+    examples: Object.fromEntries(Object.entries(pb.examples).map(([k, v]) => [k, tidy(v)])),
+    rules: { ...pb.rules, extra: tidy(pb.rules.extra) },
+    proof: pb.proof.filter((p) => p.claim.trim() || p.customer.trim()),
+  };
+}
+
+function PlaybookPage() {
+  const [pb, setPb] = useState(null);
+  const [meta, setMeta] = useState(null);
+  const [err, setErr] = useState('');
+  const [msg, setMsg] = useState('');
+  const [code, setCode] = useState(safeStore.get('accessCode'));
+  const [busy, setBusy] = useState(false);
+  const [dirty, setDirty] = useState(false);
+  useEffect(() => { api.playbook().then((r) => { setPb(r.content); setMeta(r); }).catch((ex) => setErr(ex.message)); }, []);
+  if (err && !pb) return <section className="page"><p className="error">{err}</p></section>;
+  if (!pb) return <section className="page"><p className="muted">Loading…</p></section>;
+
+  const set = (path, value) => {
+    setDirty(true); setMsg('');
+    setPb((cur) => {
+      const next = structuredClone(cur);
+      let o = next; for (const k of path.slice(0, -1)) o = o[k];
+      o[path.at(-1)] = value;
+      return next;
+    });
+  };
+  async function save(markReviewed) {
+    setErr(''); setMsg(''); setBusy(true);
+    try {
+      safeStore.set('accessCode', code);
+      const content = { ...cleanPlaybook(pb), status: markReviewed ? 'reviewed' : pb.status };
+      const r = await api.savePlaybook(content, code);
+      setPb(r.content); setMeta(r); setDirty(false); setMsg('Saved. New drafts use this version.');
+    } catch (ex) { setErr(ex.message); } finally { setBusy(false); }
+  }
+  const T = ({ label, hint, path, rows = 3, value, onChange }) => (
+    <label className="field">
+      <span className="field-label">{label}</span>
+      {hint && <span className="field-hint">{hint}</span>}
+      <textarea rows={rows} value={value} onChange={(e) => onChange(e.target.value)} />
+    </label>
+  );
+
+  return (
+    <section className="page playbook">
+      <header className="page-head">
+        <h1>Playbook</h1>
+        <p className="muted">What every engagement draft is grounded in. Drafts may only state results from the proof library.</p>
+        <p className="small">
+          {pb.status === 'seed' ? <span className="seedtag">Seed version: drafted from Nectar's public site, check it</span> : <span className="okt">Reviewed</span>}
+          {meta?.saved ? <span className="muted"> · saved {day(meta.created_at)}</span> : <span className="muted"> · not saved yet (using the built-in seed)</span>}
+        </p>
+      </header>
+
+      <div className="card">
+        <h2>You</h2>
+        <div className="grid2">
+          <label className="field"><span className="field-label">Name</span><input value={pb.sender.name} onChange={(e) => set(['sender', 'name'], e.target.value)} /></label>
+          <label className="field"><span className="field-label">Role</span><input value={pb.sender.role} onChange={(e) => set(['sender', 'role'], e.target.value)} /></label>
+        </div>
+        <label className="field"><span className="field-label">LinkedIn headline</span><input value={pb.sender.headline} onChange={(e) => set(['sender', 'headline'], e.target.value)} placeholder="What people see under your name" /></label>
+      </div>
+
+      <div className="card">
+        <h2>What Nectar sells</h2>
+        {T({ label: 'One-liner', rows: 3, value: pb.product.one_liner, onChange: (v) => set(['product', 'one_liner'], v) })}
+        {T({ label: 'Value props', hint: 'One per line', rows: 5, value: lines(pb.product.value_props), onChange: (v) => set(['product', 'value_props'], unlines(v)) })}
+        {T({ label: "Who it's for", rows: 2, value: pb.product.who_its_for, onChange: (v) => set(['product', 'who_its_for'], v) })}
+        {T({ label: 'Pains it solves', hint: 'One per line', rows: 4, value: lines(pb.product.pains), onChange: (v) => set(['product', 'pains'], unlines(v)) })}
+      </div>
+
+      <div className="card">
+        <div className="card-head"><h2>Proof library</h2><span className="muted small">The only results drafts may state, each credited to its customer</span></div>
+        <div className="proofs">
+          {pb.proof.map((p, i) => (
+            <div key={p.id} className="proof">
+              <div className="grid3">
+                <label className="field"><span className="field-label">Customer</span><input value={p.customer} onChange={(e) => set(['proof', i, 'customer'], e.target.value)} /></label>
+                <label className="field"><span className="field-label">Category</span><input value={p.category} onChange={(e) => set(['proof', i, 'category'], e.target.value)} /></label>
+                <label className="field"><span className="field-label">Type</span>
+                  <select value={p.kind} onChange={(e) => set(['proof', i, 'kind'], e.target.value)}>
+                    <option value="result">Result (has a number)</option><option value="quote">Quote</option><option value="customer">Named customer</option><option value="company">Company-wide</option>
+                  </select>
+                </label>
+              </div>
+              <label className="field"><span className="field-label">Claim</span><textarea rows={2} value={p.claim} onChange={(e) => set(['proof', i, 'claim'], e.target.value)} /></label>
+              <div className="proof-foot">
+                <label className="field grow"><span className="field-label">Source URL</span><input value={p.source_url} onChange={(e) => set(['proof', i, 'source_url'], e.target.value)} /></label>
+                <button className="link danger" onClick={() => set(['proof'], pb.proof.filter((_, j) => j !== i))}>Remove</button>
+              </div>
+            </div>
+          ))}
+        </div>
+        <button className="pill ghost" onClick={() => {
+          const n = Math.max(0, ...pb.proof.map((p) => Number(String(p.id).replace(/\D/g, '')) || 0)) + 1;
+          set(['proof'], [...pb.proof, { id: `p${n}`, customer: '', category: '', claim: '', source_url: '', kind: 'result' }]);
+        }}>Add proof</button>
+      </div>
+
+      <div className="card">
+        <h2>Voice</h2>
+        {T({ label: 'Tone rules', hint: 'One per line', rows: 4, value: lines(pb.voice.tone), onChange: (v) => set(['voice', 'tone'], unlines(v)) })}
+        {T({ label: 'Words and phrases that fit', hint: 'One per line', rows: 3, value: lines(pb.voice.use), onChange: (v) => set(['voice', 'use'], unlines(v)) })}
+        {T({ label: 'Never use', hint: 'One per line. Em dashes are always removed.', rows: 5, value: lines(pb.banned), onChange: (v) => set(['banned'], unlines(v)) })}
+      </div>
+
+      <div className="card">
+        <div className="card-head"><h2>Examples you like</h2><span className="muted small">These steer the style most. Separate examples with a line of ---</span></div>
+        {T({ label: 'Comments', rows: 5, value: blocks(pb.examples.comments), onChange: (v) => set(['examples', 'comments'], unblocks(v)) })}
+        {T({ label: 'Connection notes', rows: 4, value: blocks(pb.examples.connection_notes), onChange: (v) => set(['examples', 'connection_notes'], unblocks(v)) })}
+        {T({ label: 'First DMs', rows: 6, value: blocks(pb.examples.dms), onChange: (v) => set(['examples', 'dms'], unblocks(v)) })}
+        {T({ label: 'Posts', rows: 6, value: blocks(pb.examples.posts), onChange: (v) => set(['examples', 'posts'], unblocks(v)) })}
+      </div>
+
+      <div className="card">
+        <h2>Rules</h2>
+        <div className="grid2">
+          <label className="field"><span className="field-label">Connection note limit (characters)</span>
+            <input type="number" min={100} max={300} value={pb.rules.connection_note_max} onChange={(e) => set(['rules', 'connection_note_max'], Number(e.target.value))} /></label>
+          <label className="field"><span className="field-label">What the first DM offers</span><input value={pb.rules.dm_offer} onChange={(e) => set(['rules', 'dm_offer'], e.target.value)} /></label>
+        </div>
+        {T({ label: 'Other rules', hint: 'One per line', rows: 4, value: lines(pb.rules.extra), onChange: (v) => set(['rules', 'extra'], unlines(v)) })}
+      </div>
+
+      <div className="savebar">
+        {!code && <input className="code" value={code} onChange={(e) => setCode(e.target.value)} type="password" placeholder="Access code" aria-label="Access code" />}
+        <button className="pill" disabled={busy} onClick={() => save(false)}>{busy ? 'Saving…' : 'Save'}</button>
+        {pb.status === 'seed' && <button className="pill ghost" disabled={busy} onClick={() => save(true)}>Save and mark reviewed</button>}
+        {dirty && <span className="muted small">Unsaved changes</span>}
+        {msg && <span className="okt small">{msg}</span>}
+        {err && <span className="error small">{err}</span>}
+      </div>
+    </section>
+  );
+}
+
 /* ---------------------------------- spend --------------------------------- */
 
 function SpendPage({ go, live }) {
@@ -559,7 +996,9 @@ function SpendPage({ go, live }) {
   const sum = (list) => list.reduce((s, r) => s + r.cost_usd, 0);
   const todays = runs.filter((r) => String(r.created_at).slice(0, 10) === today);
   const months_ = runs.filter((r) => String(r.created_at).slice(0, 7) === month);
-  const finished = runs.filter((r) => r.finished_at && r.status !== 'failed');
+  const monthRuns = months_.filter((r) => r.kind !== 'draft').length;
+  const monthDrafts = months_.length - monthRuns;
+  const finished = runs.filter((r) => r.kind !== 'draft' && r.finished_at && r.status !== 'failed');
   const avg = finished.length ? sum(finished) / finished.length : 0;
 
   return (
@@ -567,8 +1006,8 @@ function SpendPage({ go, live }) {
       <header className="page-head"><h1>Spend</h1><p className="muted">What each live run cost, from the providers' own usage numbers.</p></header>
       <div className="tiles">
         <div className="tile"><span>Today</span><strong>{usd(sum(todays))}</strong><em>of {usd(capUsd)} daily cap</em><div className="bar"><i style={{ width: `${Math.min(100, (sum(todays) / capUsd) * 100)}%` }} /></div></div>
-        <div className="tile"><span>This month</span><strong>{usd(sum(months_))}</strong><em>{months_.length} {months_.length === 1 ? "run" : "runs"}</em></div>
-        <div className="tile"><span>Average run</span><strong>{usd(avg)}</strong><em>completed runs</em></div>
+        <div className="tile"><span>This month</span><strong>{usd(sum(months_))}</strong><em>{monthRuns} {monthRuns === 1 ? 'run' : 'runs'}{monthDrafts ? `, ${monthDrafts} ${monthDrafts === 1 ? 'draft' : 'drafts'}` : ''}</em></div>
+        <div className="tile"><span>Average run</span><strong>{usd(avg)}</strong><em>completed research runs</em></div>
       </div>
       <div className="card flush">
         <table className="list">
@@ -579,13 +1018,13 @@ function SpendPage({ go, live }) {
                 <tr className="clickable" onClick={() => setOpen(open === r.id ? null : r.id)}>
                   <td className="nowrap">{new Date(r.created_at).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}</td>
                   <td>{r.brand ? <a href={pathFor({ page: 'account', slug: r.brand.slug })} onClick={(e) => { e.preventDefault(); e.stopPropagation(); go({ page: 'account', slug: r.brand.slug }); }}>{r.brand.name}</a> : <span className="muted">—</span>}</td>
-                  <td><span className={`status s-${r.status}`}>{r.status}</span></td>
+                  <td><span className={`status s-${r.status}`}>{r.status}</span>{r.kind === 'draft' && <span className="muted small"> · engagement draft</span>}</td>
                   <td className="num">{secs(r.started_at, r.finished_at) ?? '—'}{secs(r.started_at, r.finished_at) !== null ? 's' : ''}</td>
                   <td className="num">{usd(r.cost_usd)} <span className="chev">{open === r.id ? '▾' : '▸'}</span></td>
                 </tr>
                 {open === r.id && (
                   <tr className="breakdown"><td colSpan={5}>
-                    {STEPS.map(([key, label]) => {
+                    {r.kind === 'draft' ? <span>Claude drafting (comments, post, connection request, DM): <strong>{usd(r.cost_usd)}</strong></span> : STEPS.map(([key, label]) => {
                       const m = r.modules.find((x) => x.module === key);
                       return <span key={key}>{label}: <strong>{m ? usd(m.cost_usd) : '—'}</strong></span>;
                     })}
@@ -605,4 +1044,5 @@ function SpendPage({ go, live }) {
 function IconSearch() { return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" /></svg>; }
 function IconList() { return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01" /></svg>; }
 function IconCoins() { return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><ellipse cx="9" cy="7" rx="6" ry="3" /><path d="M3 7v5c0 1.7 2.7 3 6 3s6-1.3 6-3V7" /><path d="M15 11.5c3.1.2 6 1.4 6 3V19c0 1.7-2.7 3-6 3-2 0-3.7-.5-4.8-1.2" /></svg>; }
+function IconBook() { return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20V3H6.5A2.5 2.5 0 0 0 4 5.5v14z" /><path d="M8 7h8M8 11h6" /></svg>; }
 function IconCheck() { return <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M5 12l5 5L20 7" /></svg>; }

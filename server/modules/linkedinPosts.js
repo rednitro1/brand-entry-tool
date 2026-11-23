@@ -64,3 +64,33 @@ export async function fetchRecentPosts({ fc, profileUrl, name = 'profile', log =
   log(`${name}: ${posts.length} recent LinkedIn posts (${posts.length - reposts} own, ${reposts} reposts)`);
   return { posts, pattern: postPattern(posts) };
 }
+
+/* The brand's own LinkedIn page posts. Reposts carry a repostId; their text is the
+   brand's caption (often empty), so the original's text is kept as a fallback. */
+export function mapCompanyPost(el) {
+  const isRepost = Boolean(el.repostId || el.repost);
+  const text = el.content || (isRepost ? el.repost?.content : '') || '';
+  return {
+    id: String(el.id || el.linkedinUrl),
+    url: el.linkedinUrl,
+    posted_at: el.postedAt?.date || null,
+    text,
+    is_repost: isRepost,
+    author: el.author?.name || null,
+    reactions: Number.isFinite(el.engagement?.likes) ? el.engagement.likes : null,
+    comments: Number.isFinite(el.engagement?.comments) ? el.engagement.comments : null,
+    type: el.postImages ? 'image' : 'text',
+    topic: classifyTopic(text),
+  };
+}
+
+export async function fetchCompanyPosts({ fc, companyUrl, name = 'the brand', log = () => {} }) {
+  const data = await fc.alexandria('harvestapi', 'linkedin/company-posts', { company: companyUrl });
+  const posts = (data?.elements || []).map(mapCompanyPost).filter((p) => p.url);
+  const recent = posts.filter((p) => p.posted_at && Date.now() - new Date(p.posted_at) < 90 * 864e5).length;
+  log(`${name} LinkedIn page: ${posts.length} recent posts, ${recent} in the last 3 months`);
+  return posts;
+}
+
+/* Posts in the last N days (default 90), the window the activity table and picks use. */
+export const withinDays = (iso, days = 90, now = new Date()) => Boolean(iso) && now - new Date(iso) < days * 864e5 && new Date(iso) <= now;

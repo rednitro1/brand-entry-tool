@@ -10,6 +10,8 @@ loadEnv();
 
 const { makeDb } = await import('./db.js');
 const { executeRun, MODULES } = await import('./runner.js');
+const { executeDraft, currentPlaybook, ENGAGEMENT_MODEL } = await import('./drafts.js');
+const { parsePlaybook } = await import('./playbook.js');
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DIST = path.join(__dirname, '..', 'dist');
@@ -46,6 +48,8 @@ app.set('trust proxy', 1); // Railway sits behind one proxy; req.ip is the real 
 app.use(express.json({ limit: '64kb' }));
 
 const rateLimit = makeRateLimiter({ limit: Number(RATE_LIMIT_RUNS_PER_IP_PER_HOUR) });
+const draftLimit = makeRateLimiter({ limit: Number(process.env.RATE_LIMIT_DRAFTS_PER_IP_PER_HOUR || 10) });
+const saveLimit = makeRateLimiter({ limit: 60 });
 const wrap = (fn) => (req, res) => fn(req, res).catch((err) => {
   console.error(`[api] ${req.method} ${req.path}: ${err.message}`);
   res.status(500).json({ error: 'Something went wrong on the server.' });
@@ -103,7 +107,54 @@ app.post('/api/runs', wrap(async (req, res) => {
   res.status(202).json({ runId: run.id });
 }));
 
-/* No delete or mutation endpoints exist beyond POST /api/runs, by design. */
+/* Playbook: open to read; saving needs the access code and creates a new version. */
+app.get('/api/playbook', wrap(async (_req, res) => res.json(await currentPlaybook(db))));
+
+app.post('/api/playbook', wrap(async (req, res) => {
+  const code = checkAccessCode(req.get('x-access-code'), RUN_ACCESS_CODE);
+  if (!code.ok) return res.status(code.status).json({ error: code.error });
+  const rl = saveLimit(hashIp(req.ip, IP_HASH_SALT));
+  if (!rl.ok) return res.status(rl.status).json({ error: rl.error });
+  let content;
+  try { content = parsePlaybook(req.body?.content); } catch (err) {
+    const first = err.issues?.[0];
+    return res.status(400).json({ error: first ? `Playbook field ${first.path.join('.') || '(root)'}: ${first.message}` : 'Invalid playbook.' });
+  }
+  const row = await db.savePlaybook(content, String(req.body?.note || '').slice(0, 200) || null);
+  res.json({ id: row.id, content: row.content, saved: true, created_at: row.created_at });
+}));
+
+/* Draft an engagement plan for an account. Same guards as a run: code, spend cap, rate limit. */
+app.post('/api/brands/:slug/engagement', wrap(async (req, res) => {
+  const code = checkAccessCode(req.get('x-access-code'), RUN_ACCESS_CODE);
+  if (!code.ok) return res.status(code.status).json({ error: code.error });
+  const slug = String(req.params.slug).slice(0, 80);
+  const brand = await db.getBrandBySlug(slug);
+  if (!brand) return res.status(404).json({ error: 'Brand not found.' });
+  const pickUrls = Array.isArray(req.body?.pickUrls) ? req.body.pickUrls.filter((u) => typeof u === 'string' && /^https:\/\/(www\.)?linkedin\.com\//.test(u)).slice(0, 3) : [];
+
+  const { spentTodayUsd, activeRuns, activeDrafts = 0 } = await db.spendToday();
+  if (activeDrafts >= 2) return res.status(429).json({ error: 'Another draft is in progress. Try again in a minute.' });
+  const cap = checkSpendCap({ spentTodayUsd, activeRuns, capUsd: Number(DAILY_SPEND_CAP_USD) });
+  if (!cap.ok) return res.status(cap.status).json({ error: cap.error });
+  const rl = draftLimit(hashIp(req.ip, IP_HASH_SALT));
+  if (!rl.ok) return res.status(rl.status).set('Retry-After', String(rl.retryAfterSec)).json({ error: rl.error });
+
+  const { id: playbookId } = await currentPlaybook(db);
+  const draft = await db.createDraft({ brandId: brand.id, model: ENGAGEMENT_MODEL(), playbookId });
+  executeDraft({ db, draftId: draft.id, slug, pickUrls, ...(FAKE ? { claude: fake.makeFakeDraftClaude() } : {}) })
+    .catch((err) => console.error(`[draft ${draft.id}] crashed: ${err.message}`));
+  res.status(202).json({ draftId: draft.id });
+}));
+
+app.get('/api/drafts/:id', wrap(async (req, res) => {
+  if (!/^[0-9a-f-]{36}$/i.test(req.params.id)) return res.status(400).json({ error: 'Bad draft id.' });
+  const d = await db.getDraft(req.params.id);
+  if (!d) return res.status(404).json({ error: 'Draft not found.' });
+  res.json(d);
+}));
+
+/* No delete endpoints exist, by design. */
 
 if (fs.existsSync(DIST)) {
   app.use(express.static(DIST));

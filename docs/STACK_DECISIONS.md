@@ -67,3 +67,12 @@ Alternatives considered (to be filled with real numbers as I test):
 - **Switching tabs:** the active run id is held above the pages and in the browser, so tabs, refreshes and closing the tab don't lose it. The sidebar shows its status everywhere. The account only auto-opens if the run finishes while Search is on screen; otherwise the sidebar offers "Open account" and nothing yanks the viewer away.
 - **Safety:** log lines say what the tool is doing, never keys, emails or raw responses; a scrubber masks anything token-shaped. Bad input (non-LinkedIn URLs) is refused before a run starts.
 - **Testing without spend:** `FAKE_MODE=1` runs the server on an in-memory database with recorded responses and delays. It refuses to start on Railway or with NODE_ENV=production.
+
+## Part 2: warm-up + first touch (engagement plan)
+- **More LinkedIn activity:** posts for every stakeholder (cap 12) plus the brand's LinkedIn page (HarvestAPI `linkedin/company-posts` via Firecrawl, 4 credits a call). Bloom showed why: its wedge personas never post, and the recent activity is the brand page and team reposts of it.
+- **Playbook, not prompt tweaks:** copywriting context (product, proof library, voice, banned phrases, Ben's own examples) lives in a versioned Playbook table that Ben edits in the tool. Seeded from nectarsocial.com/customers, Menlo and GV with a source on every proof item.
+- **Model:** Sonnet 5.5 for picking and writing (Ben's call; about $0.05 to $0.12 a draft), set by `ENGAGEMENT_MODEL`. Research stays on Opus.
+- **On demand:** drafting is a button on the account, not part of every run, so it only costs money when someone wants copy.
+- **Receipts for copy:** every input gets an id; every draft cites ids. The server rejects unknown ids, numbers that are not in the cited items (rounding allowed), banned phrases, over-limit connection notes, naming the target brand in the own post, and naming a Nectar customer without citing that customer's proof. One automatic retry with the problems fed back, then anything left is shown as "check before using", never hidden.
+- **Honest proof:** Nectar has no public food and beverage result with a number, so a post for a beverage brand says what Fishwife and David Protein use Nectar for and borrows numbers from named customers in other categories, credited, with a visible "needs proof" note.
+- **Recommends only:** copy buttons; nothing posts, connects or messages.
