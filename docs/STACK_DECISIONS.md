@@ -51,3 +51,7 @@ Alternatives considered (to be filled with real numbers as I test):
 - **Prospeo exact-title filters return NO_RESULTS** unless titles match its taxonomy, so the fallback filters on domain + seniority (C-Suite/VP/Director) and classifies titles locally. NO_RESULTS is free; Prospeo rate-limits quickly, so the client waits and retries.
 - **LinkedIn posts: reposts are not flagged.** 5 of Kira's 9 feed items are John Fieldly's or Celsius's posts. They're detected by the author slug in the post URL, and only her own posts count toward her pattern. All three receipt posts from the manual research came back, at 1 Firecrawl credit per profile (the contract says 4).
 - **Kira's pattern, computed:** 4 own posts (2 promotions, 2 team or speaking), 0 tactics, latest own post is the Mar 2026 PepsiCo HQ talk. This matches the manual read that she rarely posts tactics.
+
+### Social (live calls, 2026-11-22)
+- **Alani Nu's Instagram is age-restricted** ("You must be 18 years old or over to see this profile"), presumably because it's an energy drink. `apify/instagram-profile-scraper` still returns followers (1,549,728) and following (22) but no post count. `apify/instagram-post-scraper` returns zero posts, only a "Restricted profile" item. Any age-gated beverage or alcohol brand will hit the same wall with anonymous scrapers. Logged-in scraping is ruled out (no credentials in this tool).
+- **Fallback tried: Firecrawl Alexandria `scrapecreators instagram/user-posts`** returned `provider_unavailable` (503) twice. It wasn't billed.
