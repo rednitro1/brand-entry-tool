@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { mapCompanyPost } from '../server/modules/linkedinPosts.js';
 import {
-  collectPosts, rankCandidates, chooseTarget, buildEvidence, extractNumbers, unsupportedNumbers, validateDraft, draftEngagement,
+  collectPosts, rankCandidates, buildPool, chooseTarget, planOutreach, buildSequence, buildEvidence, extractNumbers, unsupportedNumbers, validateDraft, draftEngagement,
 } from '../server/modules/engagement.js';
 import { SEED_PLAYBOOK, parsePlaybook } from '../server/playbook.js';
 
@@ -72,11 +72,14 @@ test('extractNumbers and unsupportedNumbers: rounding allowed, invented numbers 
   assert.deepEqual(unsupportedNumbers('engagement up 75%', ['engagement up 150%']), ['75%']);
 });
 
-function goodDraft(evidence, picks) {
+// person:1 = Sydney (wedge), person:2 = Emma (team).
+function goodDraft(evidence, picks, outreach = ['person:1', 'person:2']) {
   return {
     comments: picks.map((id) => ({ post_id: id, text: 'Love that the briefs leave room for the creator. That is where the real content comes from.', evidence: [id] })),
     own_post: { text: 'Food and beverage brands like Fishwife use Nectar to find creators. At e.l.f. Beauty, DM replies went from 11 hours to 9 minutes.', evidence: ['proof:p9', 'proof:p4'], closest_category_used: 'food and beverage' },
-    connection_request: { text: 'Hi Sydney, saw the team is running creators across 811K Instagram followers and 974K on TikTok. Would love to connect.', evidence: ['stat:instagram.followers', 'stat:tiktok.followers'] },
+    connections: outreach.map((pid) => ({ person_id: pid, text: pid === 'person:1'
+      ? 'Hi Sydney, saw the team is running creators across 811K Instagram followers and 974K on TikTok. Would love to connect.'
+      : 'Hi Emma, enjoyed your creator summit recap. Would love to connect.', evidence: pid === 'person:1' ? ['stat:instagram.followers', 'stat:tiktok.followers'] : ['person:2'] })),
     first_dm: { text: 'Thanks for connecting. Can I send a short Loom on how teams like e.l.f. Beauty cut DM replies from 11 hours to 9 minutes?', evidence: ['proof:p4'] },
     notes_for_ben: '',
   };
@@ -87,7 +90,7 @@ test('validateDraft: a clean draft passes', () => {
   const candidates = rankCandidates(collectPosts(b), NOW);
   const evidence = buildEvidence({ bundle: b, candidates, playbook });
   const picks = ['post:1', 'post:2', 'post:3'];
-  const { problems } = validateDraft(goodDraft(evidence, picks), { evidence, playbook, brandName: b.brand.name, picks });
+  const { problems } = validateDraft(goodDraft(evidence, picks), { evidence, playbook, brandName: b.brand.name, picks, outreach: ['person:1', 'person:2'] });
   assert.deepEqual(problems, []);
 });
 
@@ -99,20 +102,23 @@ test('validateDraft: catches a made-up number, unknown id, banned phrase, long n
   d.comments[0].text = 'Huge — love this. Engagement up 300% must feel great.';
   d.comments[1].evidence = ['post:99'];
   d.first_dm.text = 'Hope this finds you well. Can I send a Loom?';
-  d.connection_request.text = 'x'.repeat(230);
+  d.connections[1].text = 'x'.repeat(230);
+  d.connections.push({ person_id: 'person:9', text: 'hi', evidence: ['person:1'] });
   d.own_post.text = 'Bloom-style brands love creators. Liquid Death too.';
-  const { draft, problems } = validateDraft(d, { evidence, playbook, brandName: b.brand.name, picks });
+  const { draft, problems } = validateDraft(d, { evidence, playbook, brandName: b.brand.name, picks, outreach: ['person:1', 'person:2'] });
   const issues = problems.map((p) => `${p.where}: ${p.issue}`).join('\n');
   assert.match(issues, /comment 1: numbers not found in the cited sources: 300%/);
   assert.match(issues, /comment 2: cites unknown evidence: post:99/);
   assert.match(issues, /first DM: banned phrase: hope this finds you well/);
-  assert.match(issues, /connection request: 230 characters, limit is 200/);
+  assert.match(issues, /connection request to Emma Price: 230 characters, limit is 200/);
+  assert.match(issues, /note for person:9, who is not on the outreach list/);
   assert.match(issues, /own post: names the target brand \(Bloom\)/);
   assert.match(issues, /own post: mentions Liquid Death without citing a proof item for Liquid Death/);
   assert.ok(!draft.comments[0].text.includes('—'));
 });
 
-// STUB claude: returns queued responses in order and records prompts.
+// STUB claude: returns queued responses in order and records prompts. A function
+// response gets the call args (to answer from the prompt).
 function stubClaude(responses) {
   const calls = [];
   return {
@@ -122,64 +128,121 @@ function stubClaude(responses) {
   };
 }
 
-test('draftEngagement: AI picks 3, drafts, all checks pass on the first try', async () => {
+// Writes a valid draft for whatever the prompt asks: one comment per picked post id, one
+// connection note per outreach person id.
+function draftFromPrompt({ user }) {
+  const picked = (user.split('OTHER POSTS')[0].split('PICKED POSTS')[1].match(/\[post:\d+\]/g) || []).map((x) => x.slice(1, -1));
+  const people = (user.split('PICKED POSTS')[0].match(/\[person:\d+\]/g) || []).map((x) => x.slice(1, -1));
+  const d = goodDraft(null, picked, people);
+  return d;
+}
+
+test('pools: fewer than 3 recent posts are topped up with older ones, marked older', () => {
+  const posts = [
+    { url: 'a', posted_at: '2026-09-23T00:00:00Z', text: 'x'.repeat(80), source: 'team', is_repost: false },
+    { url: 'b', posted_at: '2026-05-18T00:00:00Z', text: 'y'.repeat(80), source: 'team', is_repost: false },
+    { url: 'c', posted_at: '2026-03-17T00:00:00Z', text: 'z'.repeat(80), source: 'wedge', is_repost: false },
+    { url: 'd', posted_at: '2025-06-01T00:00:00Z', text: 'w'.repeat(80), source: 'wedge', is_repost: false },
+  ];
+  const pool = buildPool(posts, NOW);
+  assert.deepEqual(pool.map((p) => p.url), ['a', 'c', 'b']);
+  assert.equal(pool[0].older, false);
+  assert.ok(pool.slice(1).every((p) => p.older && p.age_days > 90));
+});
+
+test('planOutreach + buildSequence: wedge always first; commented team members become bridges', () => {
+  const people = bundle().stakeholders;
+  const emmaPost = { source: 'team', stakeholder_id: 's2', author: 'Emma Price' };
+  const brandPost = { source: 'brand', stakeholder_id: null, author: 'Bloom' };
+  const o = planOutreach(people, [emmaPost, brandPost]);
+  assert.deepEqual(o.map((x) => [x.person.full_name, x.role]), [['Sydney Specht', 'wedge'], ['Emma Price', 'bridge']]);
+  assert.deepEqual(buildSequence({ brandName: 'Bloom', pickedPosts: [emmaPost, brandPost], outreach: o }), [
+    "Comment on Emma Price's post", "Comment on Bloom's LinkedIn page post",
+    'Connect with Emma Price (you commented on their post)', 'Connect with Sydney Specht', 'When Sydney Specht accepts, send the first DM',
+  ]);
+  assert.deepEqual(planOutreach(people, [brandPost]).map((x) => x.role), ['wedge'], 'brand page posts never create a bridge');
+  const kira = { source: 'wedge', stakeholder_id: 's1', author: 'Sydney Specht' };
+  assert.equal(buildSequence({ brandName: 'Bloom', pickedPosts: [kira, kira, brandPost], outreach: planOutreach(people, [kira]) })[0], "Comment on Sydney Specht's 2 posts");
+});
+
+test('draftEngagement (Alani shape): one recent team post + older posts; bridge and wedge both get notes, wedge gets the DM', async () => {
+  const b = { ...bundle(), brandPosts: [] };
+  b.stakeholders[1].stakeholder_posts = [
+    { url: 'https://www.linkedin.com/posts/emma-a', posted_at: '2026-09-23T10:00:00Z', text: 'Our creator summit wrapped with forty creators and the best briefs left room for their voice.', is_repost: false, reactions: 50, comments: 4 },
+    { url: 'https://www.linkedin.com/posts/emma-b', posted_at: '2026-05-18T10:00:00Z', text: 'Proud of the team for the spring launch, our biggest creator activation so far this year.', is_repost: false, reactions: 80, comments: 9 },
+  ];
+  b.stakeholders[0].stakeholder_posts = [
+    { url: 'https://www.linkedin.com/posts/sydney-a', posted_at: '2026-03-17T10:00:00Z', text: 'Spoke on a panel about influencer programs that scale without losing the community feel.', is_repost: false, reactions: 120, comments: 12 },
+  ];
+  const claude = stubClaude([draftFromPrompt]);
+  const r = await draftEngagement({ bundle: b, playbook, claude, now: NOW });
+  assert.equal(claude.calls.length, 1, 'exactly 3 candidates: no pick call');
+  assert.equal(r.output.picks.length, 3);
+  assert.equal(r.output.picks.filter((p) => p.older).length, 2);
+  assert.ok(r.output.picks.filter((p) => p.older).every((p) => /Fewer than 3 posts in the last 3 months/.test(p.reason)));
+  assert.deepEqual(r.output.outreach.map((o) => [o.name, o.role, Boolean(o.dm)]), [['Sydney Specht', 'wedge', true], ['Emma Price', 'bridge', false]]);
+  assert.ok(r.output.outreach.every((o) => o.connection.text && o.connection.limit === 200));
+  assert.equal(r.output.sequence.at(-1), 'When Sydney Specht accepts, send the first DM');
+  assert.deepEqual(r.problems, []);
+});
+
+test('draftEngagement: a single post still gives a full plan', async () => {
+  const b = { ...bundle(), brandPosts: [] };
+  b.stakeholders[1].stakeholder_posts = [b.stakeholders[1].stakeholder_posts[1]];
+  const claude = stubClaude([draftFromPrompt]);
+  const r = await draftEngagement({ bundle: b, playbook, claude, now: NOW });
+  assert.equal(r.output.picks.length, 1);
+  assert.match(r.output.picks[0].reason, /One of only 1 post/);
+  assert.equal(r.output.outreach.length, 2);
+  assert.ok(r.output.own_post.text && r.output.outreach[0].dm.text);
+});
+
+test('draftEngagement: no posts at all still drafts own post, connection note and DM (no comments)', async () => {
+  const b = { ...bundle(), brandPosts: [], stakeholders: bundle().stakeholders.map((s) => ({ ...s, stakeholder_posts: [] })) };
+  const claude = stubClaude([(args) => { assert.match(args.user, /none: there are no posts with text from the past year/); return draftFromPrompt(args); }]);
+  const r = await draftEngagement({ bundle: b, playbook, claude, now: NOW });
+  assert.equal(r.output.picks.length, 0);
+  assert.deepEqual(r.output.outreach.map((o) => o.role), ['wedge']);
+  assert.equal(r.output.brand_posts_pulled, false);
+  assert.deepEqual(r.problems, []);
+});
+
+test('draftEngagement: many candidates, AI picks; bad or duplicate ids are filled from the ranked order', async () => {
   const b = bundle();
   const claude = stubClaude([
-    { picks: [{ post_id: 'post:1', reason: 'Own post with a lesson.' }, { post_id: 'post:2', reason: 'Launch.' }, { post_id: 'post:3', reason: 'Retail win.' }] },
-    () => goodDraft(null, ['post:1', 'post:2', 'post:3']),
+    { picks: [{ post_id: 'post:99', reason: 'bad id' }, { post_id: 'post:2', reason: 'Launch.' }, { post_id: 'post:2', reason: 'dupe' }] },
+    draftFromPrompt,
   ]);
   const r = await draftEngagement({ bundle: b, playbook, claude, now: NOW });
   assert.equal(claude.calls.length, 2);
-  assert.deepEqual(r.problems, []);
-  assert.equal(r.output.target.name, 'Sydney Specht');
   assert.equal(r.output.picks.length, 3);
-  assert.equal(r.output.picks[0].author, 'Emma Price');
-  assert.ok(r.output.picks.every((p) => p.comment.text && p.url));
-  assert.equal(r.output.connection_request.limit, 200);
-  assert.ok(r.output.evidence['proof:p4'].url.includes('nectarsocial.com'));
-  assert.equal(r.output.own_post.needs_proof, true, 'food and beverage post carried by a beauty number');
+  assert.equal(new Set(r.output.picks.map((p) => p.url)).size, 3);
+  assert.equal(r.output.picks[0].reason, 'Launch.');
+  assert.deepEqual(r.problems, []);
 });
 
-test('draftEngagement: Ben\'s swapped picks are kept and Claude fills the rest', async () => {
-  const b = bundle();
-  const mine = brandPosts[0].url; // Woolworths post
-  const claude = stubClaude([
-    (args) => {
-      assert.match(args.user, /listing the already-chosen ids first: post:1/);
-      return { picks: [{ post_id: 'post:1', reason: 'x' }, { post_id: 'post:2', reason: 'Own post.' }, { post_id: 'post:3', reason: 'Launch.' }] };
-    },
-    goodDraft(null, ['post:1', 'post:2', 'post:3']),
-  ]);
-  const r = await draftEngagement({ bundle: b, playbook, claude, pickUrls: [mine], now: NOW });
+test('draftEngagement: a failed pick call falls back to the ranked order instead of failing', async () => {
+  const claude = stubClaude([() => { throw new Error('model declined'); }, draftFromPrompt]);
+  const r = await draftEngagement({ bundle: bundle(), playbook, claude, now: NOW });
+  assert.equal(r.output.picks.length, 3);
+});
+
+test('draftEngagement: Ben\'s picks are kept first and the AI fills the rest', async () => {
+  const mine = brandPosts[0].url;
+  const claude = stubClaude([(args) => { assert.match(args.user, /Pick exactly 2 posts/); return { picks: [{ post_id: 'post:2', reason: 'Own post.' }, { post_id: 'post:3', reason: 'Launch.' }] }; }, draftFromPrompt]);
+  const r = await draftEngagement({ bundle: bundle(), playbook, claude, pickUrls: [mine], now: NOW });
   assert.equal(r.picks[0].url, mine);
   assert.equal(r.picks[0].by, 'ben');
   assert.equal(new Set(r.picks.map((p) => p.url)).size, 3);
 });
 
-test('draftEngagement: three picks from Ben skip the pick call entirely', async () => {
-  const b = bundle();
-  const urls = rankCandidates(collectPosts(b), NOW).slice(2, 5).map((p) => p.url);
-  const claude = stubClaude([goodDraft(null, ['post:1', 'post:2', 'post:3'])]);
-  const r = await draftEngagement({ bundle: b, playbook, claude, pickUrls: urls, now: NOW });
-  assert.equal(claude.calls.length, 1);
-  assert.deepEqual(r.picks.map((p) => p.url), urls);
-});
-
 test('draftEngagement: a failing draft is retried once with the problems fed back', async () => {
-  const b = bundle();
-  const bad = goodDraft(null, ['post:1', 'post:2', 'post:3']);
-  bad.first_dm = { text: 'We grew engagement 900% for brands like yours.', evidence: ['proof:p6'] };
   const claude = stubClaude([
     { picks: [{ post_id: 'post:1', reason: 'a' }, { post_id: 'post:2', reason: 'b' }, { post_id: 'post:3', reason: 'c' }] },
-    bad,
-    (args) => { assert.match(args.user, /first DM: numbers not found in the cited sources: 900%/); return goodDraft(null, ['post:1', 'post:2', 'post:3']); },
+    (args) => { const d = draftFromPrompt(args); d.first_dm = { text: 'We grew engagement 900% for brands like yours.', evidence: ['proof:p6'] }; return d; },
+    (args) => { assert.match(args.user, /first DM: numbers not found in the cited sources: 900%/); return draftFromPrompt(args); },
   ]);
-  const r = await draftEngagement({ bundle: b, playbook, claude, now: NOW });
+  const r = await draftEngagement({ bundle: bundle(), playbook, claude, now: NOW });
   assert.equal(claude.calls.length, 3);
   assert.deepEqual(r.problems, []);
-});
-
-test('draftEngagement: refuses cleanly when there are no recent posts', async () => {
-  const b = { ...bundle(), brandPosts: [], stakeholders: bundle().stakeholders.map((s) => ({ ...s, stakeholder_posts: [] })) };
-  await assert.rejects(draftEngagement({ bundle: b, playbook, claude: stubClaude([]), now: NOW }), /No posts with text from the last 90 days/);
 });

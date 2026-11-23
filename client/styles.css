@@ -376,3 +376,14 @@ a.ev:hover { border-color: var(--green); color: var(--green-ink); }
   .post-meta .eng { margin-left: 0; }
   .authors { grid-template-columns: 1fr 1fr; }
 }
+
+/* outreach: wedge track + bridges, and the week's sequence */
+.sequence { border: 1px solid var(--line); border-radius: 12px; padding: 4px 16px 12px; margin-top: 10px; }
+.sequence .plan-step { margin-top: 12px; }
+.sequence ol { margin: 0; padding-left: 20px; display: grid; gap: 4px; font-size: 14px; color: var(--ink); }
+.kind.k-older { border-color: var(--warn); color: var(--warn); }
+.outreach { border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; margin-top: 12px; min-width: 0; }
+.outreach.r-wedge { border-color: var(--green); }
+.outreach-head { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.outreach-head a { margin-left: auto; font-size: 12.5px; }
+.outreach .why { margin: 4px 0 0; }

@@ -25,7 +25,12 @@ export function makeFakeProviders({ speed = 1 } = {}) {
   const fc = () => ({
     async search(q) { await d(700, 1600); return q.startsWith('site:linkedin') ? [{ url: 'https://www.linkedin.com/company/alani-nutrition/' }] : searchRes; },
     async scrape(url, o) { await d(900, 2600); return o?.formats?.includes('links') ? { url, links } : { url, title: url, markdown: page(url) }; },
-    async alexandria(provider, capability) { await d(2000, 4500); return capability === 'linkedin/company-posts' ? companyNow : provider === 'harvestapi' ? posts : li; },
+    // FAKE_PAGE_POSTS=0 simulates a brand page with no posts (the few-posts case).
+    async alexandria(provider, capability) {
+      await d(2000, 4500);
+      if (capability === 'linkedin/company-posts') return process.env.FAKE_PAGE_POSTS === '0' ? { elements: [] } : companyNow;
+      return provider === 'harvestapi' ? posts : li;
+    },
     usage: () => ({ costUsd: 0 }),
   });
   return {
@@ -63,13 +68,14 @@ export function makeFakeDraftClaude() {
         const ids = [...new Set(user.match(/\[post:\d+\]/g) || [])].map((x) => x.slice(1, -1));
         return { parsed: { picks: ids.slice(0, 3).map((id) => ({ post_id: id, reason: 'FAKE MODE: first candidate in rank order.' })) } };
       }
-      const picked = (user.split('OTHER RECENT POSTS')[0].match(/\[post:\d+\]/g) || []).map((x) => x.slice(1, -1));
+      const picked = (((user.split('OTHER POSTS')[0].split('PICKED POSTS')[1]) || '').match(/\[post:\d+\]/g) || []).map((x) => x.slice(1, -1));
+      const people = (user.split('PICKED POSTS')[0].match(/\[person:\d+\]/g) || []).map((x) => x.slice(1, -1));
       const stat = (user.match(/\[stat:instagram\.followers\]/) || user.match(/\[stat:[a-z]+\.followers\]/) || [''])[0].slice(1, -1);
       return {
         parsed: {
-          comments: picked.slice(0, 3).map((id) => ({ post_id: id, text: 'FAKE MODE comment: reacting to what this post actually says.', evidence: [id] })),
+          comments: picked.map((id) => ({ post_id: id, text: 'FAKE MODE comment: reacting to what this post actually says.', evidence: [id] })),
           own_post: { text: 'FAKE MODE own post. Food and beverage brands like Fishwife use Nectar to find creators, and at e.l.f. Beauty DM replies went from 11 hours to 9 minutes.', evidence: ['proof:p9', 'proof:p4'], closest_category_used: 'food and beverage' },
-          connection_request: { text: 'FAKE MODE connection note grounded in their public page stats.', evidence: stat ? [stat] : ['person:1'] },
+          connections: people.map((pid, i) => ({ person_id: pid, text: i === 0 ? 'FAKE MODE note to the wedge persona, grounded in their page stats.' : 'FAKE MODE note to a team member, referencing their post.', evidence: i === 0 && stat ? [stat] : [pid] })),
           first_dm: { text: 'FAKE MODE first DM. Can I send a short Loom on how e.l.f. Beauty cut DM replies from 11 hours to 9 minutes?', evidence: ['proof:p4'] },
           notes_for_ben: 'Fake mode: placeholder copy, no model was called.',
         },

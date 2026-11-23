@@ -572,12 +572,12 @@ function LinkedInActivity({ b, picking, selected, onToggle }) {
               <button key={k} role="tab" aria-selected={filter === k} className={`chipbtn${filter === k ? ' on' : ''}`} onClick={() => { setFilter(k); setLimit(12); }}>{label}</button>
             ))}
           </div>
-          {picking && <p className="pickhint">Choose up to 3 posts to engage with ({selected.length}/3). Fewer than 3 and the AI fills the rest.</p>}
+          {picking && <p className="pickhint">Choose up to 3 posts from the past year ({selected.length}/3). Fewer than 3 and the AI fills the rest. Older posts are under All time.</p>}
           {shown.length === 0 ? <p className="muted small">No posts for this filter.</p> : (
             <ul className="feed">
               {shown.slice(0, limit).map((p) => {
                 const on = selected.includes(p.url);
-                const canPick = picking && p.text.trim().length >= 40 && within90(p.posted_at);
+                const canPick = picking && p.text.trim().length >= 40 && Boolean(p.posted_at) && Date.now() - new Date(p.posted_at) < 365 * DAY;
                 return (
                   <li key={p.url} className={`post s-${p.source}${on && picking ? ' picked' : ''}`}>
                     <div className="post-meta">
@@ -727,7 +727,20 @@ function EngagementPlan({ b, slug, go, picking, selected, startPicking, stopPick
             </div>
           )}
 
-          <h3 className="plan-step">1. Engage with these three posts this week</h3>
+          {(o.sequence || []).length > 0 && (
+            <div className="sequence">
+              <h3 className="plan-step">This week, in order</h3>
+              <ol>{o.sequence.map((step, i) => <li key={i}>{step}</li>)}</ol>
+            </div>
+          )}
+
+          <h3 className="plan-step">1. {o.picks.length === 0 ? 'Posts to engage with' : o.picks.length === 1 ? 'Engage with this post' : `Engage with these ${o.picks.length === 3 ? 'three' : 'two'} posts`}</h3>
+          {o.picks.length < 3 && (
+            <p className="note-line">
+              {o.picks.length === 0 ? 'No posts with text from the past year, so there is nothing to comment on yet. ' : `Only ${o.picks.length} post${o.picks.length === 1 ? '' : 's'} with text from the past year. `}
+              {o.brand_posts_pulled === false ? "The brand's LinkedIn page posts haven't been pulled for this account; run the research again to add them." : 'The rest of the plan still works from the research.'}
+            </p>
+          )}
           <div className="picks">
             {o.picks.map((p, i) => (
               <div key={p.url} className={`pickcard s-${p.source}`}>
@@ -736,6 +749,7 @@ function EngagementPlan({ b, slug, go, picking, selected, startPicking, stopPick
                   <span className="who">{p.author}</span>
                   <span className={`kind k-${p.source}`}>{SOURCE_TEXT[p.source]}</span>
                   {p.is_repost && <span className="kind">Repost</span>}
+                  {p.older && <span className="kind k-older">{Math.max(3, Math.round((p.age_days || 0) / 30))} months old</span>}
                   <span className="when">{ago(p.posted_at)}</span>
                   <a href={p.url} target="_blank" rel="noreferrer">Open post</a>
                 </div>
@@ -750,10 +764,20 @@ function EngagementPlan({ b, slug, go, picking, selected, startPicking, stopPick
           <Draft title="Your post" sub="Never names the brand" text={o.own_post.text} ids={o.own_post.evidence} index={o.evidence}
             extra={o.own_post.needs_proof && <p className="note-line">No {o.own_post.closest_category_used || 'same-category'} customer result with a number is in the Playbook yet, so the numbers here come from other categories. Add one in Playbook if you have it.</p>} />
 
-          <h3 className="plan-step">3. Connect with {o.target.name}</h3>
-          <p className="muted small target">{o.target.title}{o.target.fallback ? ' (no wedge persona found; most senior team member)' : ` · ${PERSONA_TEXT[o.target.persona] || ''}`}{o.target.linkedin_url && <> · <a href={o.target.linkedin_url} target="_blank" rel="noreferrer">LinkedIn</a></>}</p>
-          <Draft title="Connection request" sub={`${o.connection_request.chars}/${o.connection_request.limit} characters`} text={o.connection_request.text} ids={o.connection_request.evidence} index={o.evidence} />
-          <Draft title="First DM (after they accept)" text={o.first_dm.text} ids={o.first_dm.evidence} index={o.evidence} />
+          <h3 className="plan-step">3. Connect{o.outreach?.length > 1 ? ' and work up' : ''}</h3>
+          {(o.outreach || legacyOutreach(o)).map((p) => (
+            <div key={p.name} className={`outreach r-${p.role}`}>
+              <div className="outreach-head">
+                <strong>{p.name}</strong>
+                {p.role === 'wedge' && !p.fallback ? <span className="badge">Wedge persona</span> : p.role === 'bridge' ? <span className="kind">Team · bridge</span> : <span className="kind">Most senior found</span>}
+                {p.linkedin_url && <a href={p.linkedin_url} target="_blank" rel="noreferrer">LinkedIn</a>}
+              </div>
+              <p className="muted small target">{p.title}{p.role === 'wedge' && PERSONA_TEXT[p.persona] ? ` · ${PERSONA_TEXT[p.persona]}` : ''}</p>
+              {p.why && <p className="why">{p.why}</p>}
+              <Draft title="Connection request" sub={`${p.connection.chars}/${p.connection.limit} characters`} text={p.connection.text} ids={p.connection.evidence} index={o.evidence} />
+              {p.dm && <Draft title="First DM (after they accept)" text={p.dm.text} ids={p.dm.evidence} index={o.evidence} />}
+            </div>
+          ))}
 
           {o.notes_for_ben && <p className="note-line"><strong>Notes:</strong> {o.notes_for_ben}</p>}
           <p className="muted small">Drafted {day(d.finished_at)} with {d.model} · {usd(d.cost_usd)}</p>
@@ -762,6 +786,12 @@ function EngagementPlan({ b, slug, go, picking, selected, startPicking, stopPick
       {controls}
     </div>
   );
+}
+
+/* Drafts made before the outreach update had one target and one connection note. */
+function legacyOutreach(o) {
+  if (!o.target) return [];
+  return [{ ...o.target, role: 'wedge', why: null, connection: o.connection_request, dm: o.first_dm }];
 }
 
 function chooseTargetName(b) {
