@@ -20,8 +20,24 @@ export function makeDb(url, key) {
     async getBrandBySlug(slug) {
       return must(await sb.from('brands').select('*').eq('slug', slug).maybeSingle(), 'getBrandBySlug');
     },
+    /* Accounts list: one row per brand with its owner and wedge-persona count from the
+       latest profile / stakeholder rows. */
     async listBrands() {
-      return must(await sb.from('brands').select('slug,name,domain,is_example,updated_at').order('is_example', { ascending: false }).order('updated_at', { ascending: false }).limit(50), 'listBrands');
+      const brands = must(await sb.from('brands').select('id,slug,name,domain,is_example,updated_at').order('is_example', { ascending: false }).order('updated_at', { ascending: false }).limit(50), 'listBrands');
+      if (!brands.length) return [];
+      const ids = brands.map((b) => b.id);
+      const profiles = must(await sb.from('brand_profiles').select('brand_id,ownership,created_at').in('brand_id', ids).order('created_at', { ascending: false }), 'listBrands profiles');
+      const people = must(await sb.from('stakeholders').select('brand_id,run_id,persona,created_at').in('brand_id', ids).order('created_at', { ascending: false }), 'listBrands people');
+      return summarizeBrands(brands, profiles, people);
+    },
+    /* Spend tab. No IP hashes, no raw inputs: brand name, status, timing and costs only. */
+    async listRuns() {
+      const runs = must(await sb.from('runs').select('id,brand_id,status,cost_usd,started_at,finished_at,created_at').order('created_at', { ascending: false }).limit(200), 'listRuns');
+      const runIds = runs.map((r) => r.id);
+      const brandIds = [...new Set(runs.map((r) => r.brand_id).filter(Boolean))];
+      const mods = runIds.length ? must(await sb.from('run_modules').select('run_id,module,status,cost_usd').in('run_id', runIds), 'listRuns modules') : [];
+      const brands = brandIds.length ? must(await sb.from('brands').select('id,name,slug').in('id', brandIds), 'listRuns brands') : [];
+      return shapeRuns(runs, mods, brands);
     },
 
     async createRun({ input, ipHash, modules }) {
@@ -108,4 +124,38 @@ export function makeDb(url, key) {
       return { brand, profile, stakeholders, social, lastRun };
     },
   };
+}
+
+export const WEDGE = new Set(['cmo', 'director_social', 'chief_digital', 'director_cx']);
+
+/* Pure helpers (tested): latest profile per brand for the owner; wedge count from that
+   brand's latest stakeholder run only. */
+export function summarizeBrands(brands, profiles, people) {
+  return brands.map((b) => {
+    const prof = profiles.find((p) => p.brand_id === b.id);
+    const latestRun = people.find((p) => p.brand_id === b.id)?.run_id;
+    const mine = people.filter((p) => p.brand_id === b.id && p.run_id === latestRun);
+    const own = prof?.ownership || {};
+    const owner = own.status === 'subsidiary' ? own.parent_company
+      : own.status === 'independent_public' ? 'Public'
+        : own.status === 'independent_private' ? 'Private' : null;
+    return {
+      slug: b.slug, name: b.name, domain: b.domain, is_example: b.is_example, updated_at: b.updated_at,
+      owner, wedge_count: mine.filter((p) => WEDGE.has(p.persona)).length, people_count: mine.length,
+    };
+  });
+}
+
+export function shapeRuns(runs, mods, brands) {
+  const brandById = Object.fromEntries(brands.map((b) => [b.id, b]));
+  return runs.map((r) => ({
+    id: r.id,
+    brand: brandById[r.brand_id] ? { name: brandById[r.brand_id].name, slug: brandById[r.brand_id].slug } : null,
+    status: r.status,
+    cost_usd: Number(r.cost_usd || 0),
+    started_at: r.started_at,
+    finished_at: r.finished_at,
+    created_at: r.created_at,
+    modules: mods.filter((m) => m.run_id === r.id).map((m) => ({ module: m.module, status: m.status, cost_usd: Number(m.cost_usd || 0) })),
+  }));
 }

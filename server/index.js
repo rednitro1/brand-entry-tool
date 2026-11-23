@@ -51,6 +51,12 @@ app.get('/api/brands/:slug', wrap(async (req, res) => {
   res.json(bundle);
 }));
 
+app.get('/api/runs', wrap(async (_req, res) => {
+  const runs = await db.listRuns();
+  const capUsd = Number(DAILY_SPEND_CAP_USD);
+  res.json({ capUsd, runs });
+}));
+
 app.get('/api/runs/:id', wrap(async (req, res) => {
   if (!/^[0-9a-f-]{36}$/i.test(req.params.id)) return res.status(400).json({ error: 'Bad run id.' });
   const run = await db.getRun(req.params.id);

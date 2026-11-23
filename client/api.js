@@ -11,3 +11,4 @@ export const api = {
   run: (id) => call(`/api/runs/${id}`),
   startRun: (input, accessCode) => call('/api/runs', { method: 'POST', body: JSON.stringify({ input }), headers: { 'x-access-code': accessCode } }),
 };
+api.runs = () => call('/api/runs');
