@@ -328,7 +328,7 @@ ${playbookBlock(pb)}
 
 WHAT TO WRITE:
 1. comments: one per picked post (same post_id), and none if there are no picked posts. React to what the post actually says, in 1 to 3 sentences. Sound like a peer who works in social, add a real observation or question. No pitch, no Nectar mention, no links, no flattery-only comments. If a post is months old, write as someone catching up on it, not as if it were new.
-2. own_post: a LinkedIn post for the sender's own page this week. It must NOT name or tag the target brand or its people. Its job is credibility: when people at the account look at the sender's profile, they see Nectar working with brands like theirs and the results. Use ONLY results from proof items, credit each number to the customer it belongs to, and prefer customers in the target's category. If no proof item in the target's category has a number, say what brands in that category use Nectar for (from proof items) and use numbers only from other named customers, clearly credited. Set closest_category_used to the proof category you leaned on.
+2. own_post: a LinkedIn post for the sender's own page this week. It must NOT name or tag the target brand or its people. Its job is credibility: when people at the account look at the sender's profile, they see that Nectar works with brands like theirs and gets results. If the playbook has an example post marked TEMPLATE, keep its wording and fill its slots. Use ONLY results from proof items. Nectar's company-wide results (proof items for "Nectar (all customers)") are always fine to use, credited to Nectar. Any customer-specific number must be credited to the customer it belongs to; you may name customers in the target's category even when they have no numbers. Set closest_category_used to the proof category you leaned on ("company" if you used only company-wide results).
 3. connections: exactly one connection note per person on the OUTREACH list (person_id = their person id), each at most the character limit.
    - A BRIDGE is a team member whose post you are commenting on. Their note references that post specifically.
    - The WEDGE persona is who the deal runs through. Their note is grounded in one specific thing about their world: their own post if one was picked, otherwise their team's recent activity, the brand's page stats or a brand fact. Do not pretend they posted something they did not.
@@ -434,8 +434,12 @@ ${evidenceLines(evidence, ['proof'])}`;
   log(problems.length ? `Done with ${problems.length} flagged problem(s)` : 'Done, all checks passed');
 
   // Needs proof when none of the cited results is from the category the post leans on.
-  const needsProof = !(playbook.proof || []).some((p) => p.kind === 'result'
-    && draft.own_post.evidence.includes(`proof:${p.id}`) && sameCategory(p.category, draft.own_post.closest_category_used));
+  // Needs proof only when the post leans on customer numbers from another category
+  // (e.g. a beverage post carried by beauty numbers). Company-wide Nectar results, or a
+  // matching-category result, are fine.
+  const cited = (playbook.proof || []).filter((p) => draft.own_post.evidence.includes(`proof:${p.id}`));
+  const needsProof = !cited.some((p) => p.kind === 'company'
+    || (p.kind === 'result' && sameCategory(p.category, draft.own_post.closest_category_used)));
   const usedIds = new Set([
     ...draft.comments.flatMap((c) => c.evidence), ...pickIds, ...draft.own_post.evidence,
     ...draft.connections.flatMap((c) => c.evidence), ...draft.first_dm.evidence,

@@ -246,3 +246,18 @@ test('draftEngagement: a failing draft is retried once with the problems fed bac
   assert.equal(claude.calls.length, 3);
   assert.deepEqual(r.problems, []);
 });
+
+test('own post backed by Nectar company-wide results is not flagged as needing proof', async () => {
+  const claude = stubClaude([
+    { picks: [{ post_id: 'post:1', reason: 'a' }, { post_id: 'post:2', reason: 'b' }, { post_id: 'post:3', reason: 'c' }] },
+    (args) => {
+      assert.match(args.system, /company-wide results/);
+      const d = draftFromPrompt(args);
+      d.own_post = { text: 'Brands like Liquid Death and OLIPOP use Nectar. Across its customers Nectar answers 10M+ conversations a week and has traced $100M in sales to them.', evidence: ['proof:p11', 'proof:p12', 'proof:p13'], closest_category_used: 'company' };
+      return d;
+    },
+  ]);
+  const r = await draftEngagement({ bundle: bundle(), playbook, claude, now: NOW });
+  assert.deepEqual(r.problems, []);
+  assert.equal(r.output.own_post.needs_proof, false);
+});
