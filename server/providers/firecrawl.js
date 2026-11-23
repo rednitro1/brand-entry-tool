@@ -25,12 +25,13 @@ export function makeFirecrawl(apiKey, {
   fetchImpl = fetch,
   usdPerCredit = Number(process.env.FIRECRAWL_USD_PER_CREDIT || 0.001),
   concurrency = 3,
+  limiter = null, // pass one shared limiter when several clients run in parallel (one Firecrawl account)
   sleep = (ms) => new Promise((r) => setTimeout(r, ms)),
   onRetry = () => {},
 } = {}) {
   let credits = 0;
   let retries = 0;
-  const limit = makeLimiter(concurrency);
+  const limit = limiter || makeLimiter(concurrency);
 
   async function postOnce(path, body) {
     const res = await fetchImpl(`${BASE}${path}`, {
