@@ -77,10 +77,14 @@ function goodDraft(evidence, picks, outreach = ['person:1', 'person:2']) {
   return {
     comments: picks.map((id) => ({ post_id: id, text: 'Love that the briefs leave room for the creator. That is where the real content comes from.', evidence: [id] })),
     own_post: { text: 'Food and beverage brands like Fishwife use Nectar to find creators. At e.l.f. Beauty, DM replies went from 11 hours to 9 minutes.', evidence: ['proof:p9', 'proof:p4'], closest_category_used: 'food and beverage' },
-    connections: outreach.map((pid) => ({ person_id: pid, text: pid === 'person:1'
-      ? 'Hi Sydney, saw the team is running creators across 811K Instagram followers and 974K on TikTok. Would love to connect.'
-      : 'Hi Emma, enjoyed your creator summit recap. Would love to connect.', evidence: pid === 'person:1' ? ['stat:instagram.followers', 'stat:tiktok.followers'] : ['person:2'] })),
-    first_dm: { text: 'Hi Sydney, 1.8M followers is a lot of DMs. Can I send a 1-minute Loom on how teams like e.l.f. Beauty cut DM replies from 11 hours to 9 minutes?', evidence: ['stat:platforms', 'proof:p4'] },
+    messages: outreach.map((pid) => ({
+      person_id: pid,
+      connection: pid === 'person:1'
+        ? { text: 'Hi Sydney, saw the team is running creators across 811K Instagram followers and 974K on TikTok. Would love to connect.', evidence: ['stat:instagram.followers', 'stat:tiktok.followers'] }
+        : { text: 'Hi Emma, enjoyed your creator summit recap. Would love to connect.', evidence: ['person:2'] },
+      first_dm: { text: 'Hi, here is the Loom. It covers how e.l.f. Beauty cut DM replies from 11 hours to 9 minutes.', evidence: ['proof:p4'] },
+    })),
+    outlines: [{ track: 'pdf', bullets: [{ text: 'How e.l.f. Beauty cut DM reply time from 11 hours to 9 minutes', evidence: ['proof:p4'] }] }],
     notes_for_ben: '',
   };
 }
@@ -101,17 +105,17 @@ test('validateDraft: catches a made-up number, unknown id, banned phrase, long n
   const d = goodDraft(evidence, picks);
   d.comments[0].text = 'Huge — love this. Engagement up 300% must feel great.';
   d.comments[1].evidence = ['post:99'];
-  d.first_dm.text = 'Hope this finds you well. Can I send a Loom?';
-  d.connections[1].text = 'x'.repeat(230);
-  d.connections.push({ person_id: 'person:9', text: 'hi', evidence: ['person:1'] });
+  d.messages[0].first_dm.text = 'Hope this finds you well. Can I send a Loom?';
+  d.messages[1].connection.text = 'x'.repeat(230);
+  d.messages.push({ person_id: 'person:9', connection: { text: 'hi', evidence: ['person:1'] }, first_dm: { text: 'hi', evidence: ['person:1'] } });
   d.own_post.text = 'Bloom-style brands love creators. Liquid Death too.';
   const { draft, problems } = validateDraft(d, { evidence, playbook, brandName: b.brand.name, picks, outreach: ['person:1', 'person:2'] });
   const issues = problems.map((p) => `${p.where}: ${p.issue}`).join('\n');
   assert.match(issues, /comment 1: numbers not found in the cited sources: 300%/);
   assert.match(issues, /comment 2: cites unknown evidence: post:99/);
-  assert.match(issues, /first DM: banned phrase: hope this finds you well/);
+  assert.match(issues, /first DM to Sydney Specht: banned phrase: hope this finds you well/);
   assert.match(issues, /connection request to Emma Price: 230 characters, limit is 200/);
-  assert.match(issues, /note for person:9, who is not on the outreach list/);
+  assert.match(issues, /messages for person:9, who is not on the outreach list/);
   assert.match(issues, /own post: names the target brand \(Bloom\)/);
   assert.match(issues, /own post: mentions Liquid Death without citing a proof item for Liquid Death/);
   assert.ok(!draft.comments[0].text.includes('—'));
@@ -123,17 +127,35 @@ function stubClaude(responses) {
   const calls = [];
   return {
     calls,
-    async structured(args) { calls.push(args); const r = responses.shift(); if (!r) throw new Error('no stub response'); return { parsed: typeof r === 'function' ? r(args) : r }; },
+    async structured(args) { calls.push(args); const r = responses.shift(); if (!r) throw new Error('no stub response; last prompt ends: ' + String(args.user).slice(-400)); return { parsed: typeof r === 'function' ? r(args) : r }; },
     usage: () => ({ costUsd: 0.07, input: 1000, output: 500 }),
   };
 }
 
 // Writes a valid draft for whatever the prompt asks: one comment per picked post id, one
 // connection note per outreach person id.
+// Fills each person's templates from the prompt the way a well-behaved model would:
+// slot values from SLOT VALUES, the rest from fixed test values, citing the evidence.
+function fillTemplate(t, v) {
+  return t.replace(/\{([^}]+)\}/g, (_, k) => ({
+    first_name: v.first_name, company: v.company, total_followers: v.total_followers, platforms: v.platforms, industry: v.industry,
+    customers_in_their_space: v.customers_in_their_space, proof_customer: 'e.l.f. Beauty', proof_result: 'cut DM reply time from 11 hours to 9 minutes',
+  }[k] ?? 'Woolworths launch'));
+}
 function draftFromPrompt({ user }) {
   const picked = (user.split('OTHER POSTS')[0].split('PICKED POSTS')[1].match(/\[post:\d+\]/g) || []).map((x) => x.slice(1, -1));
-  const people = (user.split('PICKED POSTS')[0].match(/\[person:\d+\]/g) || []).map((x) => x.slice(1, -1));
-  const d = goodDraft(null, picked, people);
+  const outreachPart = user.split('PICKED POSTS')[0];
+  const blocks = outreachPart.split(/\n(?=\[person:\d+\])/).filter((b) => /^\[person:\d+\]/.test(b));
+  const d = goodDraft(null, picked, []);
+  d.messages = blocks.map((b) => {
+    const pid = b.match(/^\[(person:\d+)\]/)[1];
+    const conn = b.match(/CONNECTION TEMPLATE: (.*)/)[1];
+    const dm = b.match(/DM TEMPLATE: (.*)/)[1];
+    const sv = Object.fromEntries(b.match(/SLOT VALUES: (.*)/)[1].split('; ').map((kv) => { const [k, ...r] = kv.split('='); return [k, r.join('=').replace(/ \(cite .*\)$/, '')]; }));
+    const cites = (b.match(/\(cite (proof:[^)]*)\)/) || [, ''])[1].split(', ').filter((x) => x.startsWith('proof:'));
+    const ev = ['stat:platforms', ...cites, 'proof:p4', ...(picked[0] ? [picked[0]] : [])];
+    return { person_id: pid, connection: { text: fillTemplate(conn, sv), evidence: ev }, first_dm: { text: fillTemplate(dm, sv), evidence: ev } };
+  });
   return d;
 }
 
@@ -158,7 +180,8 @@ test('planOutreach + buildSequence: wedge always first; commented team members b
   assert.deepEqual(o.map((x) => [x.person.full_name, x.role]), [['Sydney Specht', 'wedge'], ['Emma Price', 'bridge']]);
   assert.deepEqual(buildSequence({ brandName: 'Bloom', pickedPosts: [emmaPost, brandPost], outreach: o }), [
     "Comment on Emma Price's post", "Comment on Bloom's LinkedIn page post",
-    'Connect with Emma Price (you commented on their post)', 'Connect with Sydney Specht', 'When Sydney Specht accepts, send the first DM',
+    'Connect with Emma Price, after commenting on their post', 'Connect with Sydney Specht',
+    'When Emma Price accepts, send the first DM', 'When Sydney Specht accepts, send the first DM',
   ]);
   assert.deepEqual(planOutreach(people, [brandPost]).map((x) => x.role), ['wedge'], 'brand page posts never create a bridge');
   const kira = { source: 'wedge', stakeholder_id: 's1', author: 'Sydney Specht' };
@@ -180,9 +203,11 @@ test('draftEngagement (Alani shape): one recent team post + older posts; bridge 
   assert.equal(r.output.picks.length, 3);
   assert.equal(r.output.picks.filter((p) => p.older).length, 2);
   assert.ok(r.output.picks.filter((p) => p.older).every((p) => /Fewer than 3 posts in the last 3 months/.test(p.reason)));
-  assert.deepEqual(r.output.outreach.map((o) => [o.name, o.role, Boolean(o.dm)]), [['Sydney Specht', 'wedge', true], ['Emma Price', 'bridge', false]]);
+  // Sydney (Director) is the top tier found, so PDF; Emma (Manager) is below it, so Loom.
+  assert.deepEqual(r.output.outreach.map((o) => [o.name, o.role, o.track, Boolean(o.dm.text)]), [['Sydney Specht', 'wedge', 'pdf', true], ['Emma Price', 'bridge', 'loom', true]]);
   assert.ok(r.output.outreach.every((o) => o.connection.text && o.connection.limit === 200));
-  assert.equal(r.output.sequence.at(-1), 'When Sydney Specht accepts, send the first DM');
+  assert.equal(r.output.sequence.at(-1), 'When Sydney Specht accepts, send the PDF + the 15-minute CTA');
+  assert.ok(r.output.sequence.includes('Connect with Emma Price (offers the Loom), after commenting on their post'));
   assert.deepEqual(r.problems, []);
 });
 
@@ -239,8 +264,8 @@ test('draftEngagement: Ben\'s picks are kept first and the AI fills the rest', a
 test('draftEngagement: a failing draft is retried once with the problems fed back', async () => {
   const claude = stubClaude([
     { picks: [{ post_id: 'post:1', reason: 'a' }, { post_id: 'post:2', reason: 'b' }, { post_id: 'post:3', reason: 'c' }] },
-    (args) => { const d = draftFromPrompt(args); d.first_dm = { text: 'We grew engagement 900% for brands like yours.', evidence: ['proof:p6'] }; return d; },
-    (args) => { assert.match(args.user, /first DM: numbers not found in the cited sources: 900%/); return draftFromPrompt(args); },
+    (args) => { const d = draftFromPrompt(args); d.messages[0].first_dm = { text: 'We grew engagement 900% for brands like yours.', evidence: ['proof:p6'] }; return d; },
+    (args) => { assert.match(args.user, /first DM to Sydney Specht: numbers not found in the cited sources: 900%/); return draftFromPrompt(args); },
   ]);
   const r = await draftEngagement({ bundle: bundle(), playbook, claude, now: NOW });
   assert.equal(claude.calls.length, 3);

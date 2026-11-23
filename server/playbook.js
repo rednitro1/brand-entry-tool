@@ -17,6 +17,39 @@ const ProofSchema = z.object({
   kind: z.enum(['result', 'quote', 'customer', 'company']).default('result'),
 });
 
+const TrackSchema = z.object({
+  asset: z.string().max(80),
+  connection_notes: z.array(z.string().max(600)).min(1).max(10),
+  first_dms: z.array(z.string().max(1500)).min(1).max(10),
+});
+
+const DEFAULT_CTA = "If you have 15 minutes, happy to show how we'd do this for {company} in our platform.";
+
+export const DEFAULT_TRACKS = {
+  pdf: {
+    asset: 'resource PDF',
+    connection_notes: [
+      'Hi {first_name}, {total_followers} followers across {platforms} is a big responsibility. Could I share a short resource on how we work with {industry} brands like {customers_in_their_space}?',
+      'Hi {first_name}, could I share a resource outlining how we help {industry} brands like {customers_in_their_space} on social?',
+    ],
+    first_dms: [
+      "Hi {first_name}, just sent the PDF over: [PDF, placeholder for this exercise]. It covers how we've helped brands like {proof_customer} with {proof_result}. If you have 15 minutes, happy to show how we'd do this for {company} in our platform.",
+      "Hi {first_name}, here's the resource: [PDF, placeholder for this exercise]. The short version: {proof_customer} {proof_result}. If you have 15 minutes, happy to walk through how we'd do this for {company} in our platform.",
+    ],
+  },
+  loom: {
+    asset: '1-minute Loom',
+    connection_notes: [
+      'Hi {first_name}, {total_followers} followers across {platforms} is a big responsibility. Can I share a 1-minute Loom on how we work with {industry} brands like {customers_in_their_space}?',
+      "Hi {first_name}, saw your team's {recent launch or campaign from their posts}. Can I share a 1-minute Loom on how we work with {industry} brands like {customers_in_their_space}?",
+    ],
+    first_dms: [
+      "Hi {first_name}, here's the 1-minute Loom: [Loom link, placeholder for this exercise]. It shows how we'd help your team keep up with comments and DMs across {platforms}. If you have 15 minutes, happy to show how we'd do this for {company} in our platform.",
+      "Hi {first_name}, as promised: [Loom link, placeholder for this exercise]. It covers how {proof_customer} {proof_result}, and what that could look like for {company}. If you have 15 minutes, happy to show how we'd do this for {company} in our platform.",
+    ],
+  },
+};
+
 export const PlaybookSchema = z.object({
   status: z.enum(['seed', 'reviewed']).default('seed'),
   sender: z.object({ name: z.string().max(80), role: z.string().max(120), headline: z.string().max(220) }),
@@ -38,11 +71,16 @@ export const PlaybookSchema = z.object({
   rules: z.object({
     connection_note_max: z.number().int().min(100).max(300),
     dm_offer: z.string().max(200),
+    dm_cta: z.string().max(300).default(DEFAULT_CTA),
     extra: z.array(z.string().max(300)).max(20),
   }),
+  // Message tracks: a connection note offers the asset, the first DM delivers it with the
+  // CTA. The top seniority tier found gets the PDF track, everyone below gets Loom.
+  tracks: z.object({ pdf: TrackSchema, loom: TrackSchema }).default(() => structuredClone(DEFAULT_TRACKS)),
 });
 
 export const SEED_PLAYBOOK = {
+  tracks: structuredClone(DEFAULT_TRACKS),
   status: 'seed',
   sender: { name: 'Ben Sollitt', role: 'GTM at Nectar Social', headline: '' },
   product: {
@@ -71,10 +109,10 @@ export const SEED_PLAYBOOK = {
     { id: 'p6', customer: 'Jones Road Beauty', category: 'beauty', kind: 'result', claim: 'Engagement went up 150%, with replies written automatically in the brand\'s own voice (Cody Plofker, CEO)', source_url: CUSTOMERS_URL },
     { id: 'p7', customer: 'Solawave', category: 'beauty devices', kind: 'result', claim: 'Their AI quiz had 90% of people finish it and added 30K+ emails to their list (Andrew Silberstein, CEO)', source_url: CUSTOMERS_URL },
     { id: 'p8', customer: 'Glamnetic', category: 'beauty', kind: 'result', claim: 'About 80% of their DMs get answered automatically, with product recommendations tailored to each person', source_url: CUSTOMERS_URL },
-    { id: 'p9', customer: 'Fishwife', category: 'food and beverage', kind: 'quote', claim: 'Uses Nectar to find new content creators to work with and to keep in touch with the creators they already work with (Halle Gold, Community and Influencer Lead)', source_url: CUSTOMERS_URL },
-    { id: 'p10', customer: 'David Protein', category: 'food and beverage', kind: 'quote', claim: 'Uses Nectar to research which content creators to partner with; their Brand Marketing Manager says it is now a core part of how the team runs influencer programs', source_url: CUSTOMERS_URL },
-    { id: 'p11', customer: 'Liquid Death', category: 'food and beverage', kind: 'customer', claim: 'Nectar customer', source_url: CUSTOMERS_URL },
-    { id: 'p12', customer: 'OLIPOP', category: 'food and beverage', kind: 'customer', claim: 'Early Nectar customer', source_url: GV_URL },
+    { id: 'p9', customer: 'Fishwife', category: 'packaged food', kind: 'quote', claim: 'Uses Nectar to find new content creators to work with and to keep in touch with the creators they already work with (Halle Gold, Community and Influencer Lead)', source_url: CUSTOMERS_URL },
+    { id: 'p10', customer: 'David Protein', category: 'packaged food', kind: 'quote', claim: 'Uses Nectar to research which content creators to partner with; their Brand Marketing Manager says it is now a core part of how the team runs influencer programs', source_url: CUSTOMERS_URL },
+    { id: 'p11', customer: 'Liquid Death', category: 'beverage', kind: 'customer', claim: 'Nectar customer', source_url: CUSTOMERS_URL },
+    { id: 'p12', customer: 'OLIPOP', category: 'beverage', kind: 'customer', claim: 'Early Nectar customer', source_url: GV_URL },
     { id: 'p13', customer: 'Nectar (all customers)', category: 'company', kind: 'company', claim: 'Nectar answers 10M+ customer conversations a week for its brands, has traced $100M in sales to those conversations, and has engaged 50M people (Menlo Ventures, May 2026)', source_url: MENLO_URL },
   ],
   voice: {
@@ -96,6 +134,7 @@ export const SEED_PLAYBOOK = {
   rules: {
     connection_note_max: 200,
     dm_offer: 'a short Loom video showing how Nectar would help their team',
+    dm_cta: DEFAULT_CTA,
     extra: [
       'Never name or tag the target brand in my own post.',
       'Comments react to what the post says; no pitch, no links, no mention of Nectar.',

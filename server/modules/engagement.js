@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { PERSONAS, PERSONA_LABEL } from './stakeholders.js';
 import { withinDays } from './linkedinPosts.js';
+import { detectIndustry, rankCaseStudies } from '../../shared/caseStudies.js';
 
 /* Part 2: the warm-up + first touch. Picks three posts to engage with, then drafts a
    comment for each, one post for Ben's own page, a connection request and a first DM.
@@ -169,20 +170,22 @@ const brandWords = (name) => String(name || '')
 
 /* Returns { draft (em dashes fixed), problems: [{ where, issue }] }. outreach: the person
    ids (person:N) that must each get exactly one connection note. */
-export function validateDraft(draft, { evidence, playbook, brandName, picks = [], outreach = [] }) {
+export function validateDraft(draft, { evidence, playbook, brandName, picks = [], outreach = [], templates = {} }) {
   const problems = [];
   const fix = (s) => String(s || '').replace(/\s*—\s*/g, ', ').replace(/\s+–\s+/g, ' - ');
   const banned = (playbook.banned || []).map((b) => b.toLowerCase());
   const customers = (playbook.proof || []).filter((p) => p.kind !== 'company').map((p) => p.customer);
 
-  const check = (where, item, { maxChars = null, requireEvidence = true } = {}) => {
+  // extraSources: text whose numbers are allowed without citation (the template's own
+  // fixed wording, e.g. "15 minutes" in Ben's CTA).
+  const check = (where, item, { maxChars = null, requireEvidence = true, extraSources = [] } = {}) => {
     if (!item) { problems.push({ where, issue: 'missing' }); return; }
     if (/[—]/.test(item.text)) item.text = fix(item.text);
     const ids = item.evidence || [];
     const unknown = ids.filter((id) => !evidence[id]);
     if (unknown.length) problems.push({ where, issue: `cites unknown evidence: ${unknown.join(', ')}` });
     if (requireEvidence && ids.filter((id) => evidence[id]).length === 0) problems.push({ where, issue: 'no evidence cited' });
-    const sources = ids.filter((id) => evidence[id]).map((id) => evidence[id].numbers_text || evidence[id].text);
+    const sources = [...ids.filter((id) => evidence[id]).map((id) => evidence[id].numbers_text || evidence[id].text), ...extraSources];
     const bad = unsupportedNumbers(item.text, sources);
     if (bad.length) problems.push({ where, issue: `numbers not found in the cited sources: ${bad.join(', ')}` });
     const low = item.text.toLowerCase();
@@ -209,16 +212,21 @@ export function validateDraft(draft, { evidence, playbook, brandName, picks = []
   }
   const limit = playbook.rules?.connection_note_max || 200;
   for (const pid of outreach) {
-    const notes = (draft.connections || []).filter((c) => c.person_id === pid);
+    const msgs = (draft.messages || []).filter((c) => c.person_id === pid);
     const who = evidence[pid]?.label || pid;
-    if (notes.length === 0) problems.push({ where: `connection request to ${who}`, issue: 'missing' });
-    else if (notes.length > 1) problems.push({ where: `connection request to ${who}`, issue: `${notes.length} notes, expected one` });
-    if (notes[0]) check(`connection request to ${who}`, notes[0], { maxChars: limit });
+    if (msgs.length === 0) { problems.push({ where: `messages to ${who}`, issue: 'missing' }); continue; }
+    if (msgs.length > 1) problems.push({ where: `messages to ${who}`, issue: `${msgs.length} sets, expected one` });
+    const m = msgs[0];
+    const t = templates[pid];
+    const fixed = (tpl) => (tpl ? [String(tpl).replace(/\{[^}]*\}/g, ' ')] : []);
+    check(`connection request to ${who}`, m.connection, { maxChars: limit, extraSources: fixed(t?.connection) });
+    check(`first DM to ${who}`, m.first_dm, { extraSources: fixed(t?.first_dm) });
+    if (t && m.connection && !templateAdherence(t.connection, m.connection.text)) problems.push({ where: `connection request to ${who}`, issue: 'does not keep the template wording; only fill the {slots}' });
+    if (t && m.first_dm && !templateAdherence(t.first_dm, m.first_dm.text)) problems.push({ where: `first DM to ${who}`, issue: 'does not keep the template wording; only fill the {slots}' });
   }
-  for (const c of draft.connections || []) {
-    if (!outreach.includes(c.person_id)) problems.push({ where: 'connection requests', issue: `note for ${c.person_id}, who is not on the outreach list` });
+  for (const m of draft.messages || []) {
+    if (!outreach.includes(m.person_id)) problems.push({ where: 'messages', issue: `messages for ${m.person_id}, who is not on the outreach list` });
   }
-  check('first DM', draft.first_dm);
   return { draft, problems };
 }
 
@@ -232,8 +240,8 @@ const Item = z.object({ text: z.string(), evidence: z.array(z.string()) });
 const DraftSchema = z.object({
   comments: z.array(z.object({ post_id: z.string(), text: z.string(), evidence: z.array(z.string()) })),
   own_post: z.object({ text: z.string(), evidence: z.array(z.string()), closest_category_used: z.string() }),
-  connections: z.array(z.object({ person_id: z.string(), text: z.string(), evidence: z.array(z.string()) })),
-  first_dm: Item,
+  messages: z.array(z.object({ person_id: z.string(), connection: Item, first_dm: Item })),
+  outlines: z.array(z.object({ track: z.enum(['pdf', 'loom']), bullets: z.array(Item) })),
   notes_for_ben: z.string(),
 });
 
@@ -260,8 +268,7 @@ Never use em dashes.
 
 RULES:
 ${list(pb.rules.extra)}
-- The connection request must be at most ${pb.rules.connection_note_max} characters.
-- The first DM offers ${pb.rules.dm_offer}.${exBlock('GOOD COMMENTS', ex.comments)}${exBlock('GOOD CONNECTION NOTES', ex.connection_notes)}${exBlock('GOOD DMS', ex.dms)}${exBlock('GOOD POSTS', ex.posts)}`;
+- The connection request must be at most ${pb.rules.connection_note_max} characters.${exBlock('GOOD COMMENTS', ex.comments)}${exBlock('GOOD POSTS', ex.posts)}`;
 }
 
 const ageText = (p) => (p.older ? ` (${Math.max(3, Math.round(p.age_days / 30))} months old)` : '');
@@ -292,8 +299,94 @@ export function planOutreach(stakeholders = [], pickedPosts = []) {
   return out;
 }
 
+/* ------------------------------ seniority + tracks ----------------------------- */
+
+/* 1 = C-suite and VPs, 2 = directors and heads, 3 = everyone else (managers, leads,
+   specialists, coordinators). */
+export function seniorityTier(title = '') {
+  const t = String(title).toLowerCase();
+  if (/\b(assistant vice president|avp)\b/.test(t)) return 2;
+  if (/\b(chief|cmo|cdo|cco|cxo|ceo|coo|president|founder|co-founder|vp|svp|evp|vice president)\b/.test(t)) return 1;
+  if (/\b(director|head of|head,|head\b)/.test(t)) return 2;
+  return 3;
+}
+const TIER_NAME = { 1: 'C-suite or VP', 2: 'director or head', 3: 'manager' };
+
+/* The highest tier found among ALL stakeholders gets the PDF track; everyone below it
+   gets the Loom track (Ben's rule). */
+export function assignTracks(stakeholders = [], outreach = []) {
+  const top = Math.min(...stakeholders.map((s) => seniorityTier(s.title)), 3);
+  return outreach.map((o) => {
+    const tier = seniorityTier(o.person.title);
+    const track = tier === top ? 'pdf' : 'loom';
+    const reason = track === 'pdf'
+      ? (top === 1 ? `Top tier (${TIER_NAME[1]}), so the PDF` : `Most senior person found (no C-suite or VP found), so the PDF`)
+      : `Below the top tier (a ${TIER_NAME[top]} was found), so the Loom`;
+    return { ...o, tier, track, track_reason: reason };
+  });
+}
+
+/* Pick one connection-note template and one DM template from the person's OWN track, so
+   a Loom offer is never followed by a PDF DM. Rotates so two people on the same track
+   don't get identical text. Templates needing a post are skipped when there are none. */
+export function chooseTemplates(withTracks, tracks, { hasPosts = true } = {}) {
+  const used = { pdf: 0, loom: 0 };
+  const usable = (arr) => {
+    const ok = arr.filter((t) => hasPosts || !/\{recent launch/i.test(t));
+    return ok.length ? ok : arr;
+  };
+  return withTracks.map((o) => {
+    const tr = tracks[o.track];
+    const notes = usable(tr.connection_notes);
+    const dms = usable(tr.first_dms);
+    const k = used[o.track]++;
+    return { ...o, asset: tr.asset, templates: { connection: notes[k % notes.length], first_dm: dms[k % dms.length] } };
+  });
+}
+
+const normalize = (s) => String(s || '').toLowerCase().replace(/[\u2018\u2019]/g, "'").replace(/[\u201c\u201d]/g, '"').replace(/\s+/g, ' ').trim();
+
+/* True if every fixed piece of the template (the text between {slots}) appears in the
+   copy, in order. The model may only fill the slots. */
+export function templateAdherence(template, text) {
+  const pieces = String(template || '').split(/\{[^}]*\}/).map(normalize).filter(Boolean);
+  const body = normalize(text);
+  let at = 0;
+  for (const piece of pieces) {
+    const i = body.indexOf(piece, at);
+    if (i === -1) return false;
+    at = i + piece.length;
+  }
+  return true;
+}
+
+/* Values the server can fill without the model: name, company, follower total, platforms,
+   industry and same-space customers (with the proof ids to cite). */
+export function slotValues(bundle, person, playbook) {
+  const PN = { instagram: 'Instagram', tiktok: 'TikTok', x: 'X' };
+  const counted = (bundle.social || []).filter((s) => PN[s.platform] && s.followers);
+  const total = counted.reduce((t, s) => t + Number(s.followers), 0);
+  const round = (n) => (n >= 1e6 ? `${(n / 1e6).toFixed(1).replace(/\.0$/, '')}M` : n >= 1e3 ? `${Math.round(n / 1e3)}K` : String(n));
+  const list = (arr) => (arr.length <= 1 ? arr.join('') : `${arr.slice(0, -1).join(', ')} and ${arr.at(-1)}`);
+  const industry = detectIndustry(bundle);
+  const ranked = rankCaseStudies(playbook.proof || [], industry?.key);
+  const pool = ranked.filter((c) => c.match).length ? ranked.filter((c) => c.match)
+    : ranked.filter((c) => c.adjacent).length ? ranked.filter((c) => c.adjacent) : ranked.filter((c) => c.results.length);
+  // Up to 3 same-space or adjacent customers; only 2 when falling back to other industries.
+  const customers = pool.slice(0, ranked.some((c) => c.match || c.adjacent) ? 3 : 2);
+  return {
+    first_name: String(person.full_name || '').split(/\s+/)[0],
+    company: String(bundle.brand.name || '').replace(/\b(llc|inc|co|corp|ltd)\.?$/i, '').trim(),
+    total_followers: total ? round(total) : null,
+    platforms: list(counted.map((s) => PN[s.platform])),
+    industry: industry?.key || null,
+    customers_in_their_space: list(customers.map((c) => c.customer)),
+    customer_proof_ids: customers.map((c) => `proof:${c.items[0].id}`), // one source per named customer
+  };
+}
+
 /* The week, in order: comments first, then connect with the bridges, then the wedge
-   persona, then the DM once they accept. */
+   persona, then each first DM once that person accepts. */
 export function buildSequence({ brandName, pickedPosts, outreach }) {
   const steps = [];
   // One step per author, in pick order ("Comment on Kira's 2 posts").
@@ -305,14 +398,14 @@ export function buildSequence({ brandName, pickedPosts, outreach }) {
   }
   for (const g of groups) {
     const what = g.n === 1 ? 'post' : `${g.n} posts`;
-    steps.push(g.key === '__brand' ? `Comment on ${brandName}'s LinkedIn page ${g.n === 1 ? 'post' : what}` : `Comment on ${g.key}'s ${what}`);
+    steps.push(g.key === '__brand'
+      ? (g.n === 1 ? `Comment on ${brandName}'s LinkedIn page post` : `Comment on ${g.n} of ${brandName}'s LinkedIn page posts`)
+      : `Comment on ${g.key}'s ${what}`);
   }
-  for (const o of outreach.filter((x) => x.role === 'bridge')) steps.push(`Connect with ${o.person.full_name} (you commented on their post)`);
-  const wedge = outreach.find((x) => x.role === 'wedge');
-  if (wedge) {
-    steps.push(`Connect with ${wedge.person.full_name}`);
-    steps.push(`When ${wedge.person.full_name} accepts, send the first DM`);
-  }
+  const asset = (o) => (o.track === 'pdf' ? 'the PDF' : o.track === 'loom' ? 'the Loom' : null);
+  const ordered = [...outreach.filter((x) => x.role === 'bridge'), ...outreach.filter((x) => x.role === 'wedge')];
+  for (const o of ordered) steps.push(`Connect with ${o.person.full_name}${asset(o) ? ` (offers ${asset(o)})` : ''}${o.role === 'bridge' ? ', after commenting on their post' : ''}`);
+  for (const o of ordered) steps.push(`When ${o.person.full_name} accepts, send ${asset(o) || 'the first DM'}${asset(o) ? ' + the 15-minute CTA' : ''}`);
   return steps;
 }
 
@@ -329,10 +422,12 @@ ${playbookBlock(pb)}
 WHAT TO WRITE:
 1. comments: one per picked post (same post_id), and none if there are no picked posts. React to what the post actually says, in 1 to 3 sentences. Sound like a peer who works in social, add a real observation or question. No pitch, no Nectar mention, no links, no flattery-only comments. If a post is months old, write as someone catching up on it, not as if it were new.
 2. own_post: a LinkedIn post for the sender's own page this week. It must NOT name or tag the target brand or its people. Its job is credibility: when people at the account look at the sender's profile, they see that Nectar works with brands like theirs and gets results. If the playbook has an example post marked TEMPLATE, keep its wording and fill its slots. Use ONLY results from proof items. Nectar's company-wide results (proof items for "Nectar (all customers)") are always fine to use, credited to Nectar. Any customer-specific number must be credited to the customer it belongs to; you may name customers in the target's category even when they have no numbers. Set closest_category_used to the proof category you leaned on ("company" if you used only company-wide results).
-3. connections: exactly one connection note per person on the OUTREACH list (person_id = their person id), each at most the character limit. Short and sweet, no fluff: 1 to 2 sentences, like the example connection notes.
-   - A BRIDGE is a team member whose post you are commenting on. Their note references that post specifically.
-   - The WEDGE persona is who the deal runs through. Their note is grounded in one specific thing about their world: their own post if one was picked, otherwise their team's recent activity, the brand's page stats or a brand fact. Do not pretend they posted something they did not.
-4. first_dm: to the WEDGE persona, sent after they accept. Short and sweet, no fluff: 2 sentences, under 50 words, one paragraph. No pleasantries or filler (no "thanks for connecting", "hope you're well", "just wanted to"). Open with something specific from the research about what their team is handling (e.g. the follower total across platforms, or a launch or campaign their team posted about); never generic congratulations. Then ask if you can send the Loom, with the proof built into that same sentence, the way the example DMs do it (e.g. "Can I send you a 1-minute Loom on how we've helped brands in your space like X with Y?"). Do NOT add a separate proof paragraph, a separate "Nectar is..." description line, a sign-off or the sender's name. Use contractions ("that's", "we've").
+3. messages: exactly one set per person on the OUTREACH list (person_id = their person id), each with a connection note and a first DM. Each person has a CONNECTION TEMPLATE and a DM TEMPLATE from their track (PDF or Loom). KEEP THE TEMPLATE WORDING EXACTLY and only replace the {slots}; never mix a Loom template with a PDF one, never add sentences.
+   - Use the SLOT VALUES given for each person where they exist. Fill any other slot from the evidence: {recent launch or campaign from their posts} = a few plain words naming something from their or their team's posts; {proof_customer} and {proof_result} = one proof item, credited to its customer.
+   - Placeholders in square brackets (e.g. [PDF, placeholder for this exercise]) stay exactly as written.
+   - The connection note must stay within the character limit. The first DM delivers the asset and ends with the CTA in the template; it never makes a new offer.
+   - Cite the evidence behind every slot value (stat:platforms for the follower total, proof: ids for customers and results, post: ids for launches).
+4. outlines: for each track used (pdf and/or loom), 3 short bullets on what that asset would cover for this account, each citing proof or stats. Plain words.
 
 EVIDENCE: every item lists the evidence ids it relies on (post:, fact:, stat:, person:, proof:). Any number you write must appear in an item you cite (rounding like 1,549,730 to 1.5M is fine). Do not state anything about the brand, the people or Nectar that is not in the cited evidence. If something would make the copy better but is not in the evidence, leave it out and mention it in notes_for_ben.`;
 
@@ -386,20 +481,26 @@ export async function draftEngagement({ bundle, playbook, claude, pickUrls = [],
   log(pickIds.length ? `Picked: ${pickIds.map((id) => evidence[id].label).join(' | ')}` : 'No posts with text in the past year; drafting outreach without comments');
 
   // Who to reach: wedge persona (connect + DM) and bridges (connect).
-  const outreach = planOutreach(bundle.stakeholders, pickedPosts);
+  const outreach = chooseTemplates(assignTracks(bundle.stakeholders, planOutreach(bundle.stakeholders, pickedPosts)), playbook.tracks, { hasPosts: pickedPosts.length > 0 });
   const personId = (s) => Object.entries(evidence).find(([, v]) => v.kind === 'person' && v.stakeholder_id === s.id)?.[0];
   const outreachIds = outreach.map((o) => personId(o.person));
   const sequence = buildSequence({ brandName: bundle.brand.name, pickedPosts, outreach });
-  log(`Outreach: ${outreach.map((o) => `${o.person.full_name} (${o.role})`).join(', ')}`);
+  log(`Outreach: ${outreach.map((o) => `${o.person.full_name} (${o.role}, ${o.track.toUpperCase()})`).join(', ')}`);
+  const templatesById = Object.fromEntries(outreach.map((o, i) => [outreachIds[i], o.templates]));
 
   // Step 2: drafts, validated, with one retry that feeds the problems back.
   const outreachLines = outreach.map((o, i) => {
     const post = pickedPosts.find((p) => p.stakeholder_id === o.person.id);
-    return `[${outreachIds[i]}] ${o.role.toUpperCase()}: ${o.person.full_name}, ${o.person.title}${o.fallback ? ' (no wedge persona found; most senior team member)' : ''}${post ? ` (you are commenting on their post ${idOf(post.url)})` : o.role === 'wedge' ? ' (no picked post of theirs)' : ''}`;
-  }).join('\n');
+    const v = slotValues(bundle, o.person, playbook);
+    return `[${outreachIds[i]}] ${o.role.toUpperCase()}: ${o.person.full_name}, ${o.person.title}${o.fallback ? ' (no wedge persona found; most senior team member)' : ''}${post ? ` (you are commenting on their post ${idOf(post.url)})` : ''}
+  TRACK: ${o.track.toUpperCase()} (${o.asset})
+  CONNECTION TEMPLATE: ${o.templates.connection}
+  DM TEMPLATE: ${o.templates.first_dm}
+  SLOT VALUES: first_name=${v.first_name}; company=${v.company}; total_followers=${v.total_followers ?? '(no follower stats found)'} (cite stat:platforms); platforms=${v.platforms || '(none)'}; industry=${v.industry || 'consumer'}; customers_in_their_space=${v.customers_in_their_space || '(none)'} (cite ${v.customer_proof_ids.join(', ') || 'the proof items you name'})`;
+  }).join('\n\n');
   const brief = `TARGET BRAND: ${bundle.brand.name}${bundle.brand.domain ? ` (${bundle.brand.domain})` : ''}
 
-OUTREACH (one connection note each; the first DM goes to the WEDGE persona):
+OUTREACH (one connection note and one first DM per person, from their own track's templates):
 ${outreachLines}
 
 PICKED POSTS (one comment each):
@@ -421,8 +522,8 @@ NECTAR PROOF ITEMS (the only results you may state):
 ${evidenceLines(evidence, ['proof'])}`;
 
   const system = DRAFT_SYSTEM(playbook);
-  const checks = { evidence, playbook, brandName: bundle.brand.name, picks: pickIds, outreach: outreachIds };
-  log(`Drafting ${pickIds.length} comment${pickIds.length === 1 ? '' : 's'}, your post, ${outreach.length} connection request${outreach.length === 1 ? '' : 's'} and the first DM`);
+  const checks = { evidence, playbook, brandName: bundle.brand.name, picks: pickIds, outreach: outreachIds, templates: templatesById };
+  log(`Drafting ${pickIds.length} comment${pickIds.length === 1 ? '' : 's'}, your post, and a connection request + first DM for ${outreach.length} ${outreach.length === 1 ? 'person' : 'people'}`);
   let { parsed: draft } = await claude.structured({ system, user: brief, schema: DraftSchema, effort: 'medium', maxTokens: 12000 });
   let { problems } = validateDraft(draft, checks);
   if (problems.length) {
@@ -442,32 +543,34 @@ ${evidenceLines(evidence, ['proof'])}`;
     || (p.kind === 'result' && sameCategory(p.category, draft.own_post.closest_category_used)));
   const usedIds = new Set([
     ...draft.comments.flatMap((c) => c.evidence), ...pickIds, ...draft.own_post.evidence,
-    ...draft.connections.flatMap((c) => c.evidence), ...draft.first_dm.evidence,
+    ...draft.messages.flatMap((m) => [...m.connection.evidence, ...m.first_dm.evidence]),
+    ...draft.outlines.flatMap((o) => o.bullets.flatMap((b) => b.evidence)),
   ]);
   const evidenceIndex = Object.fromEntries([...usedIds].filter((id) => evidence[id]).map((id) => {
     const { kind, url, label, text } = evidence[id];
     return [id, { kind, url, label, text: String(text).slice(0, 500) }];
   }));
   const limit = playbook.rules.connection_note_max;
-  const noteFor = (pid) => draft.connections.find((c) => c.person_id === pid) || { text: '', evidence: [] };
-  const wedgeIdx = outreach.findIndex((o) => o.role === 'wedge');
+  const empty = { text: '', evidence: [] };
+  const msgFor = (pid) => draft.messages.find((m) => m.person_id === pid) || { connection: empty, first_dm: empty };
 
   return {
     picks: picks.map((p) => ({ url: evidence[p.post_id].url, reason: p.reason, by: p.by })),
     problems,
     output: {
-      version: 2,
+      version: 3,
       sequence,
       outreach: outreach.map((o, i) => {
         const post = pickedPosts.find((p) => p.stakeholder_id === o.person.id);
-        const note = noteFor(outreachIds[i]);
+        const m = msgFor(outreachIds[i]);
+        const note = m.connection;
         return {
           name: o.person.full_name, title: o.person.title, persona: o.person.persona, linkedin_url: o.person.linkedin_url,
-          role: o.role, fallback: o.fallback,
+          role: o.role, fallback: o.fallback, track: o.track, asset: o.asset, tier: o.tier, track_reason: o.track_reason,
           why: o.role === 'bridge' ? 'You are commenting on their post, so the connection request has context.'
             : post ? 'Wedge persona, and you are commenting on their post.' : 'Wedge persona: the deal runs through them, even though they have not posted recently.',
           connection: { text: note.text, evidence: note.evidence, chars: note.text.length, limit },
-          dm: i === wedgeIdx ? draft.first_dm : null,
+          dm: m.first_dm,
         };
       }),
       picks: picks.map((p) => {
@@ -481,6 +584,7 @@ ${evidenceLines(evidence, ['proof'])}`;
         };
       }),
       own_post: { ...draft.own_post, needs_proof: needsProof },
+      outlines: draft.outlines.filter((o) => outreach.some((x) => x.track === o.track)),
       notes_for_ben: draft.notes_for_ben,
       problems,
       evidence: evidenceIndex,

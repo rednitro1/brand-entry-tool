@@ -649,7 +649,7 @@ function Evidence({ ids = [], index = {} }) {
   if (!ids.length) return null;
   return (
     <div className="evidence">
-      {ids.filter((id) => index[id]).map((id) => {
+      {[...new Set(ids)].filter((id) => index[id]).map((id) => {
         const e = index[id];
         const label = `${e.kind === 'proof' ? 'Proof' : e.kind === 'stat' ? 'Stat' : e.kind === 'fact' ? 'Fact' : e.kind === 'person' ? 'Person' : 'Post'}: ${e.label}`;
         return e.url
@@ -773,12 +773,21 @@ function EngagementPlan({ b, slug, go, picking, selected, startPicking, stopPick
               <div className="outreach-head">
                 <strong>{p.name}</strong>
                 {p.role === 'wedge' && !p.fallback ? <span className="badge">Wedge persona</span> : p.role === 'bridge' ? <span className="kind">Team · bridge</span> : <span className="kind">Most senior found</span>}
+                {p.track && <span className={`track t-${p.track}`}>{p.track === 'pdf' ? 'PDF' : 'Loom'}</span>}
                 {p.linkedin_url && <a href={p.linkedin_url} target="_blank" rel="noreferrer">LinkedIn</a>}
               </div>
               <p className="muted small target">{p.title}{p.role === 'wedge' && PERSONA_TEXT[p.persona] ? ` · ${PERSONA_TEXT[p.persona]}` : ''}</p>
+              {p.track_reason && <p className="why"><span>Why {p.track === 'pdf' ? 'the PDF' : 'a Loom'}:</span> {p.track_reason}.</p>}
               {p.why && <p className="why">{p.why}</p>}
-              <Draft title="Connection request" sub={`${p.connection.chars}/${p.connection.limit} characters`} text={p.connection.text} ids={p.connection.evidence} index={o.evidence} />
-              {p.dm && <Draft title="First DM (after they accept)" text={p.dm.text} ids={p.dm.evidence} index={o.evidence} />}
+              <Draft title={p.track ? `Connection request (offers the ${p.asset || (p.track === 'pdf' ? 'PDF' : 'Loom')})` : 'Connection request'} sub={`${p.connection.chars}/${p.connection.limit} characters`} text={p.connection.text} ids={p.connection.evidence} index={o.evidence} />
+              {p.dm?.text && <Draft title={p.track ? `First DM (after they accept: sends the ${p.track === 'pdf' ? 'PDF' : 'Loom'} + CTA)` : 'First DM (after they accept)'} text={p.dm.text} ids={p.dm.evidence} index={o.evidence} />}
+              {(o.outlines || []).filter((x) => x.track === p.track).map((x) => (
+                <div key={x.track} className="outline">
+                  <h4>What the {x.track === 'pdf' ? 'PDF' : 'Loom'} would cover</h4>
+                  <ul>{x.bullets.map((bl, i) => <li key={i}>{bl.text}</li>)}</ul>
+                  <Evidence ids={[...new Set(x.bullets.flatMap((bl) => bl.evidence))]} index={o.evidence} />
+                </div>
+              ))}
             </div>
           ))}
 
@@ -814,8 +823,9 @@ function CaseStudies({ b, go }) {
   const company = companyWide(pb.proof);
   const matches = studies.filter((c) => c.match).length;
   // Same-space customers, plus the two strongest stories with numbers from elsewhere.
-  const strongest = studies.filter((c) => !c.match && c.results.length).slice(0, 2);
-  const shown = all ? studies : [...studies.filter((c) => c.match), ...strongest].slice(0, Math.max(4, matches + strongest.length));
+  const adjacent = studies.filter((c) => c.adjacent);
+  const strongest = studies.filter((c) => !c.match && !c.adjacent && c.results.length).slice(0, 2);
+  const shown = all ? studies : [...studies.filter((c) => c.match), ...adjacent, ...strongest].slice(0, Math.max(4, matches + adjacent.length + strongest.length));
   const toPlaybook = (e) => { e.preventDefault(); go({ page: 'playbook' }); };
   return (
     <div className="card cases">
@@ -830,7 +840,7 @@ function CaseStudies({ b, go }) {
           <div key={c.customer} className={`case${c.match ? ' is-match' : ''}`}>
             <div className="case-head">
               <strong>{c.customer}</strong>
-              {c.match ? <span className="badge">Same space</span> : <span className="kind">{c.category}{c.results.length ? ' · strong numbers' : ''}</span>}
+              {c.match ? <span className="badge">Same space</span> : c.adjacent ? <span className="kind k-adjacent">Adjacent: {c.category}</span> : <span className="kind">{c.category}{c.results.length ? ' · strong numbers' : ''}</span>}
             </div>
             {c.results.length > 0 ? (
               <ul>{c.results.slice(0, 3).map((r) => <li key={r.id}>{r.claim}</li>)}</ul>
@@ -931,6 +941,7 @@ function cleanPlaybook(pb) {
     banned: tidy(pb.banned),
     examples: Object.fromEntries(Object.entries(pb.examples).map(([k, v]) => [k, tidy(v)])),
     rules: { ...pb.rules, extra: tidy(pb.rules.extra) },
+    tracks: Object.fromEntries(Object.entries(pb.tracks || {}).map(([k, t]) => [k, { ...t, connection_notes: tidy(t.connection_notes), first_dms: tidy(t.first_dms) }])),
     proof: pb.proof.filter((p) => p.claim.trim() || p.customer.trim()),
   };
 }
@@ -1053,11 +1064,21 @@ function PlaybookPage() {
         {T({ label: 'Never use', hint: 'One per line. Em dashes are always removed.', rows: 5, value: lines(pb.banned), onChange: (v) => set(['banned'], unlines(v)) })}
       </Section>
 
-      <Section title="Examples and templates" meta={[count(pb.examples.posts, 'post'), count(pb.examples.connection_notes, 'connection note'), count(pb.examples.dms, 'DM'), count(pb.examples.comments, 'comment')].join(' · ')}>
-        <p className="muted small">These steer the style most. Separate examples with a line of ---</p>
+      <Section title="Message tracks" meta={pb.tracks ? `PDF: ${count(pb.tracks.pdf.connection_notes, 'note')}, ${count(pb.tracks.pdf.first_dms, 'DM')} · Loom: ${count(pb.tracks.loom.connection_notes, 'note')}, ${count(pb.tracks.loom.first_dms, 'DM')}` : ''}>
+        <p className="muted small">The connection request makes the offer; the first DM delivers it with the CTA. The most senior tier found at an account gets the PDF track; everyone below gets the Loom track. Each person's note and DM always come from the same track. Slots in {'{braces}'} are filled from the research; separate templates with a line of ---</p>
+        {pb.tracks && ['pdf', 'loom'].map((k) => (
+          <div key={k} className="trackbox">
+            <h3><span className={`track t-${k}`}>{k === 'pdf' ? 'PDF' : 'Loom'}</span> {k === 'pdf' ? 'Top tier found (C-suite or VP, else the most senior person)' : 'Everyone below the top tier'}</h3>
+            <label className="field"><span className="field-label">Asset name</span><input value={pb.tracks[k].asset} onChange={(e) => set(['tracks', k, 'asset'], e.target.value)} /></label>
+            {T({ label: 'Connection note templates (make the offer)', rows: 5, value: blocks(pb.tracks[k].connection_notes), onChange: (v) => set(['tracks', k, 'connection_notes'], unblocks(v)) })}
+            {T({ label: 'First DM templates (deliver it + CTA)', rows: 6, value: blocks(pb.tracks[k].first_dms), onChange: (v) => set(['tracks', k, 'first_dms'], unblocks(v)) })}
+          </div>
+        ))}
+      </Section>
+
+      <Section title="Examples and templates" meta={[count(pb.examples.posts, 'post'), count(pb.examples.comments, 'comment')].join(' · ')}>
+        <p className="muted small">Comment examples and post templates. Separate examples with a line of ---</p>
         {T({ label: 'Comments', rows: 5, value: blocks(pb.examples.comments), onChange: (v) => set(['examples', 'comments'], unblocks(v)) })}
-        {T({ label: 'Connection notes', rows: 4, value: blocks(pb.examples.connection_notes), onChange: (v) => set(['examples', 'connection_notes'], unblocks(v)) })}
-        {T({ label: 'First DMs', rows: 6, value: blocks(pb.examples.dms), onChange: (v) => set(['examples', 'dms'], unblocks(v)) })}
         {T({ label: 'Posts', rows: 6, value: blocks(pb.examples.posts), onChange: (v) => set(['examples', 'posts'], unblocks(v)) })}
       </Section>
 
@@ -1065,7 +1086,7 @@ function PlaybookPage() {
         <div className="grid2">
           <label className="field"><span className="field-label">Connection note limit (characters)</span>
             <input type="number" min={100} max={300} value={pb.rules.connection_note_max} onChange={(e) => set(['rules', 'connection_note_max'], Number(e.target.value))} /></label>
-          <label className="field"><span className="field-label">What the first DM offers</span><input value={pb.rules.dm_offer} onChange={(e) => set(['rules', 'dm_offer'], e.target.value)} /></label>
+          <label className="field"><span className="field-label">First DM call to action</span><input value={pb.rules.dm_cta || ''} onChange={(e) => set(['rules', 'dm_cta'], e.target.value)} /></label>
         </div>
         {T({ label: 'Other rules', hint: 'One per line', rows: 4, value: lines(pb.rules.extra), onChange: (v) => set(['rules', 'extra'], unlines(v)) })}
       </Section>

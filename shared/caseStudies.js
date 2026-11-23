@@ -3,9 +3,10 @@
    free (no AI call); shared by the browser and the tests. */
 
 const INDUSTRIES = [
-  { key: 'food and beverage', words: ['beverage', 'drink', 'energy drink', 'soda', 'sparkling', 'hydration', 'protein', 'supplement', 'nutrition', 'snack', 'food', 'pre-workout', 'caffeine', 'coffee', 'tea'] },
-  { key: 'beauty', words: ['beauty', 'cosmetic', 'skincare', 'skin care', 'makeup', 'lipstick', 'fragrance', 'haircare', 'hair care', 'nail', 'lash'] },
-  { key: 'accessories / DTC', words: ['leather', 'bag', 'apparel', 'fashion', 'clothing', 'accessories', 'jewelry', 'footwear', 'shoe'] },
+  { key: 'beverage', family: 'food and beverage', words: ['beverage', 'drink', 'energy drink', 'soda', 'sparkling', 'hydration', 'pre-workout', 'caffeine', 'coffee', 'tea', 'water', 'juice', 'canned drink'] },
+  { key: 'packaged food', family: 'food and beverage', words: ['food', 'snack', 'protein bar', 'seafood', 'tinned', 'canned fish', 'protein bar', 'cereal', 'chips'] },
+  { key: 'beauty', family: 'beauty', words: ['beauty', 'cosmetic', 'skincare', 'skin care', 'makeup', 'lipstick', 'fragrance', 'haircare', 'hair care', 'nail', 'lash'] },
+  { key: 'accessories / DTC', family: 'accessories', words: ['leather', 'bag', 'apparel', 'fashion', 'clothing', 'accessories', 'jewelry', 'footwear', 'shoe'] },
 ];
 
 /* The account's industry from its own research text (name, summary, facts). Returns
@@ -18,14 +19,18 @@ export function detectIndustry(bundle) {
   ].join(' ').toLowerCase();
   let best = null;
   for (const ind of INDUSTRIES) {
-    const hits = ind.words.reduce((n, w) => n + (text.match(new RegExp(`\\b${w.replace(/[-/]/g, '\\$&')}`, 'g')) || []).length, 0);
-    if (hits > 0 && (!best || hits > best.hits)) best = { key: ind.key, hits };
+    // Whole words only (plural allowed): "tea" must not match "team".
+    const hits = ind.words.reduce((n, w) => n + (text.match(new RegExp(`\\b${w.replace(/[-/]/g, '\\$&')}s?\\b`, 'g')) || []).length, 0);
+    if (hits > 0 && (!best || hits > best.hits)) best = { key: ind.key, family: ind.family, hits };
   }
   return best;
 }
 
 const words = (s) => String(s || '').toLowerCase().split(/[^a-z]+/).filter((w) => w.length > 3);
 export const sameIndustry = (a, b) => { const wb = words(b); return words(a).some((w) => wb.includes(w)); };
+const familyOf = (category) => INDUSTRIES.find((i) => sameIndustry(i.key, category))?.family || null;
+/* Same family but a different industry, e.g. packaged food next to a beverage account. */
+export const adjacentIndustry = (a, b) => !sameIndustry(a, b) && Boolean(familyOf(a)) && familyOf(a) === familyOf(b);
 
 /* One entry per customer: its results and quotes, whether it is in the account's
    industry, and a source link. Same industry first, then customers with numbers. */
@@ -44,7 +49,8 @@ export function rankCaseStudies(proof = [], industry = null) {
     .map((c) => {
       const results = c.items.filter((p) => p.kind === 'result');
       const match = industry ? sameIndustry(c.category, industry) : false;
-      return { ...c, match, results, quotes: c.items.filter((p) => p.kind === 'quote'), score: (match ? 100 : 0) + results.length * 10 + c.items.length };
+      const adjacent = industry ? adjacentIndustry(c.category, industry) : false;
+      return { ...c, match, adjacent, results, quotes: c.items.filter((p) => p.kind === 'quote'), score: (match ? 100 : adjacent ? 50 : 0) + results.length * 10 + c.items.length };
     })
     .sort((a, b) => b.score - a.score);
 }

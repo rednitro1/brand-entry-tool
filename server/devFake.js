@@ -69,14 +69,26 @@ export function makeFakeDraftClaude() {
         return { parsed: { picks: ids.slice(0, 3).map((id) => ({ post_id: id, reason: 'FAKE MODE: first candidate in rank order.' })) } };
       }
       const picked = (((user.split('OTHER POSTS')[0].split('PICKED POSTS')[1]) || '').match(/\[post:\d+\]/g) || []).map((x) => x.slice(1, -1));
-      const people = (user.split('PICKED POSTS')[0].match(/\[person:\d+\]/g) || []).map((x) => x.slice(1, -1));
-      const stat = (user.match(/\[stat:instagram\.followers\]/) || user.match(/\[stat:[a-z]+\.followers\]/) || [''])[0].slice(1, -1);
+      // Fill each person's templates from the prompt, like a well-behaved model would.
+      const blocks = user.split('PICKED POSTS')[0].split(/\n(?=\[person:\d+\])/).filter((b) => /^\[person:\d+\]/.test(b));
+      const fill = (t, v) => t.replace(/\{([^}]+)\}/g, (_, k) => ({ proof_customer: 'e.l.f. Beauty', proof_result: 'cut DM reply time from 11 hours to 9 minutes' }[k] ?? v[k] ?? 'their latest launch'));
+      const messages = blocks.map((b) => {
+        const pid = b.match(/^\[(person:\d+)\]/)[1];
+        const v = Object.fromEntries((b.match(/SLOT VALUES: (.*)/)?.[1] || '').split('; ').map((kv) => { const [k, ...r] = kv.split('='); return [k, r.join('=').replace(/ \(cite .*\)$/, '')]; }));
+        const cites = ((b.match(/\(cite (proof:[^)]*)\)/) || [, ''])[1].split(', ')).filter((x) => x.startsWith('proof:'));
+        const ev = ['stat:platforms', ...cites, 'proof:p4'];
+        return { person_id: pid, connection: { text: fill(b.match(/CONNECTION TEMPLATE: (.*)/)[1], v), evidence: ev }, first_dm: { text: fill(b.match(/DM TEMPLATE: (.*)/)[1], v), evidence: ev } };
+      });
+      const tracks = [...new Set(blocks.map((b) => (b.match(/TRACK: (PDF|LOOM)/) || [, ''])[1].toLowerCase()).filter(Boolean))];
       return {
         parsed: {
           comments: picked.map((id) => ({ post_id: id, text: 'FAKE MODE comment: reacting to what this post actually says.', evidence: [id] })),
-          own_post: { text: 'FAKE MODE own post. Food and beverage brands like Fishwife use Nectar to find creators, and at e.l.f. Beauty DM replies went from 11 hours to 9 minutes.', evidence: ['proof:p9', 'proof:p4'], closest_category_used: 'food and beverage' },
-          connections: people.map((pid, i) => ({ person_id: pid, text: i === 0 ? 'FAKE MODE note to the wedge persona, grounded in their page stats.' : 'FAKE MODE note to a team member, referencing their post.', evidence: i === 0 && stat ? [stat] : [pid] })),
-          first_dm: { text: 'FAKE MODE first DM. Can I send a short Loom on how e.l.f. Beauty cut DM replies from 11 hours to 9 minutes?', evidence: ['proof:p4'] },
+          own_post: { text: 'FAKE MODE own post. Food and beverage brands like Fishwife use Nectar to find creators, and at e.l.f. Beauty DM replies went from 11 hours to 9 minutes.', evidence: ['proof:p9', 'proof:p4'], closest_category_used: 'packaged food' },
+          messages,
+          outlines: tracks.map((t) => ({ track: t, bullets: [
+            { text: 'FAKE MODE: how e.l.f. Beauty cut DM reply time from 11 hours to 9 minutes', evidence: ['proof:p4'] },
+            { text: 'FAKE MODE: what their follower count means for daily comment and DM volume', evidence: ['stat:platforms'] },
+          ] })),
           notes_for_ben: 'Fake mode: placeholder copy, no model was called.',
         },
       };
