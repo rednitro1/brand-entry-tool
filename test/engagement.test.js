@@ -80,7 +80,7 @@ function goodDraft(evidence, picks, outreach = ['person:1', 'person:2']) {
     connections: outreach.map((pid) => ({ person_id: pid, text: pid === 'person:1'
       ? 'Hi Sydney, saw the team is running creators across 811K Instagram followers and 974K on TikTok. Would love to connect.'
       : 'Hi Emma, enjoyed your creator summit recap. Would love to connect.', evidence: pid === 'person:1' ? ['stat:instagram.followers', 'stat:tiktok.followers'] : ['person:2'] })),
-    first_dm: { text: 'Thanks for connecting. Can I send a short Loom on how teams like e.l.f. Beauty cut DM replies from 11 hours to 9 minutes?', evidence: ['proof:p4'] },
+    first_dm: { text: 'Hi Sydney, 1.8M followers is a lot of DMs. Can I send a 1-minute Loom on how teams like e.l.f. Beauty cut DM replies from 11 hours to 9 minutes?', evidence: ['stat:platforms', 'proof:p4'] },
     notes_for_ben: '',
   };
 }

@@ -21,14 +21,8 @@ export const PlaybookSchema = z.object({
   status: z.enum(['seed', 'reviewed']).default('seed'),
   sender: z.object({ name: z.string().max(80), role: z.string().max(120), headline: z.string().max(220) }),
   product: z.object({
-    one_liner: "Nectar Social is one place where a brand's social, community, creator, customer service and insights teams see every comment, DM, post and creator conversation, and answer them fast in the brand's own voice.",
-    value_props: [
-      "Answers comments and DMs in the brand's own voice, fast, at a volume no team could keep up with.",
-      'Finds and checks content creators who fit the brand, including their past brand deals.',
-      'Shows how much in sales comes from social media conversations.',
-      'Tracks what people say about the brand across Instagram, TikTok, Facebook, LinkedIn, Reddit and X.',
-      'The brand team stays in charge of tone, rules and approvals.',
-    ],
+    one_liner: z.string().max(400),
+    value_props: z.array(z.string().max(300)).max(12),
     who_its_for: z.string().max(400),
     pains: z.array(z.string().max(300)).max(12),
   }),
@@ -52,13 +46,13 @@ export const SEED_PLAYBOOK = {
   status: 'seed',
   sender: { name: 'Ben Sollitt', role: 'GTM at Nectar Social', headline: '' },
   product: {
-    one_liner: 'Nectar Social is an agentic operating system for social: one platform where an AI agent (Ren) works alongside the community, creator, social, paid, customer care and insights teams, from the same fans, creators, posts and conversations.',
+    one_liner: "Nectar Social is one place where a brand's social, community, creator, customer service and insights teams see every comment, DM, post and creator conversation, and answer them fast in the brand's own voice.",
     value_props: [
-      'Replies to comments and DMs in the brand\'s own voice, fast, at a volume no team could staff.',
-      'Finds and vets creators against the brand guide (Creator Agent), including past brand deals and safety flags.',
-      'Ties a social conversation back to revenue, so social shows up as a measurable channel.',
-      'Social listening across Meta, TikTok, LinkedIn, Reddit and X through official data partnerships.',
-      'Keeps the brand team in control of voice, guidelines and approvals; Nectar runs the operation.',
+      "Answers comments and DMs in the brand's own voice, fast, at a volume no team could keep up with.",
+      'Finds and checks content creators who fit the brand, including their past brand deals.',
+      'Shows how much in sales comes from social media conversations.',
+      'Tracks what people say about the brand across Instagram, TikTok, Facebook, LinkedIn, Reddit and X.',
+      'The brand team stays in charge of tone, rules and approvals.',
     ],
     who_its_for: 'Consumer brands with big, busy social audiences (beauty, food and beverage, retail, DTC) whose social, community, creator and customer care teams are stretched across many platforms.',
     pains: [
