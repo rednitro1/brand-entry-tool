@@ -130,7 +130,15 @@ export const SEED_PLAYBOOK = {
     'I came across your profile', 'quick question', 'pick your brain',
     'thanks for connecting', "hope you're doing well", "hope you're well", 'just wanted to', "I'd love to", 'reaching out because',
   ],
-  examples: { comments: [], connection_notes: [], dms: [], posts: [] },
+  examples: {
+    comments: [
+      'Oh wow, awesome launch.',
+      'My favorite 7-Eleven better stock this soon.',
+      'Putting veterans inside the company front and center is a nice way to use a day like this.',
+      'Love the line about legal helping figure out how to get things done, not just saying no.',
+    ],
+    connection_notes: [], dms: [], posts: [],
+  },
   rules: {
     connection_note_max: 200,
     dm_offer: 'a short Loom video showing how Nectar would help their team',

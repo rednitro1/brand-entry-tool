@@ -75,7 +75,7 @@ test('extractNumbers and unsupportedNumbers: rounding allowed, invented numbers 
 // person:1 = Sydney (wedge), person:2 = Emma (team).
 function goodDraft(evidence, picks, outreach = ['person:1', 'person:2']) {
   return {
-    comments: picks.map((id) => ({ post_id: id, text: 'Love that the briefs leave room for the creator. That is where the real content comes from.', evidence: [id] })),
+    comments: picks.map((id) => ({ post_id: id, text: 'Love that the briefs leave room for the creator.', evidence: [id] })),
     own_post: { text: 'Food and beverage brands like Fishwife use Nectar to find creators. At e.l.f. Beauty, DM replies went from 11 hours to 9 minutes.', evidence: ['proof:p9', 'proof:p4'], closest_category_used: 'food and beverage' },
     messages: outreach.map((pid) => ({
       person_id: pid,
@@ -285,4 +285,25 @@ test('own post backed by Nectar company-wide results is not flagged as needing p
   const r = await draftEngagement({ bundle: bundle(), playbook, claude, now: NOW });
   assert.deepEqual(r.problems, []);
   assert.equal(r.output.own_post.needs_proof, false);
+});
+
+test('comments: one short casual sentence; multi-sentence, long and question comments are flagged', () => {
+  const b = bundle();
+  const evidence = buildEvidence({ bundle: b, candidates: rankCandidates(collectPosts(b), NOW), playbook });
+  const picks = ['post:1', 'post:2', 'post:3'];
+  const d = goodDraft(evidence, picks);
+  d.comments[0].text = 'Putting veterans front and center is a nice touch. A series of real stories gets people talking. Curious how it is landing.';
+  d.comments[1].text = 'So good. '.repeat(25).trim();
+  d.comments[2].text = 'Curious how the launch went';
+  d.comments[2].text += '?';
+  const { problems } = validateDraft(d, { evidence, playbook, brandName: b.brand.name, picks, outreach: ['person:1', 'person:2'] });
+  const issues = problems.map((p) => `${p.where}: ${p.issue}`).join('\n');
+  assert.match(issues, /comment 1: 3 sentences/);
+  assert.match(issues, /comment 2: \d+ characters; keep it short/);
+  assert.match(issues, /comment 3: asks a question/);
+});
+
+test('comments: Ben\'s example comments all pass the style check', async () => {
+  const { commentStyleProblems } = await import('../server/modules/engagement.js');
+  for (const c of playbook.examples.comments) assert.deepEqual(commentStyleProblems(c), [], c);
 });

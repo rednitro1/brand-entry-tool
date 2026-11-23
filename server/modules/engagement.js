@@ -168,6 +168,21 @@ const brandWords = (name) => String(name || '')
   .replace(/\b(llc|inc|co|corp|ltd|company|nutrition|beverages?|foods?|brands?)\b\.?/gi, '')
   .split(/\s+/).map((w) => w.trim()).filter((w) => w.length >= 3);
 
+/* Comments are one short, casual sentence: no follow-on sentences, no questions. */
+export const COMMENT_MAX_CHARS = 160;
+export function commentStyleProblems(text = '') {
+  const t = String(text).trim();
+  const out = [];
+  // Sentence ends: . ! ? followed by a space and more text.
+  // Dotted abbreviations like "e.l.f." or "U.S." are not sentence ends.
+  const plain = t.replace(/\b(?:[a-z]\.){2,}/gi, (m) => m.replace(/\./g, ''));
+  const sentences = plain.split(/(?<=[.!?])\s+(?=\S)/).filter((x) => x.trim().length > 1);
+  if (sentences.length > 1) out.push(`${sentences.length} sentences; keep it to one short sentence`);
+  if (t.length > COMMENT_MAX_CHARS) out.push(`${t.length} characters; keep it short (under ${COMMENT_MAX_CHARS})`);
+  if (t.includes('?')) out.push('asks a question; comments are just a reaction, no questions');
+  return out;
+}
+
 /* Returns { draft (em dashes fixed), problems: [{ where, issue }] }. outreach: the person
    ids (person:N) that must each get exactly one connection note. */
 export function validateDraft(draft, { evidence, playbook, brandName, picks = [], outreach = [], templates = {} }) {
@@ -202,6 +217,7 @@ export function validateDraft(draft, { evidence, playbook, brandName, picks = []
 
   (draft.comments || []).forEach((c, i) => {
     check(`comment ${i + 1}`, c);
+    for (const issue of commentStyleProblems(c?.text)) problems.push({ where: `comment ${i + 1}`, issue });
     if (!picks.includes(c.post_id)) problems.push({ where: `comment ${i + 1}`, issue: `is for ${c.post_id}, which is not one of the picked posts` });
   });
   if ((draft.comments || []).length !== picks.length) problems.push({ where: 'comments', issue: `expected ${picks.length} comments, got ${(draft.comments || []).length}` });
@@ -420,7 +436,7 @@ const DRAFT_SYSTEM = (pb) => `You write LinkedIn warm-up copy for a rep at Necta
 ${playbookBlock(pb)}
 
 WHAT TO WRITE:
-1. comments: one per picked post (same post_id), and none if there are no picked posts. React to what the post actually says, in 1 to 3 sentences. Sound like a peer who works in social, add a real observation or question. No pitch, no Nectar mention, no links, no flattery-only comments. If a post is months old, write as someone catching up on it, not as if it were new.
+1. comments: one per picked post (same post_id), and none if there are no picked posts. These are purely engagement, to introduce the sender's face to the brand: short, sweet and casual, like a real person scrolling LinkedIn. EXACTLY ONE sentence, short to medium (aim for under 20 words). React to the one thing a real person would notice; a light joke or a quirky line is welcome when it fits. Never recap or re-explain the post, never ask a question, never fish for results or metrics, no pitch, no Nectar mention, no links. Match the example comments.
 2. own_post: a LinkedIn post for the sender's own page this week. It must NOT name or tag the target brand or its people. Its job is credibility: when people at the account look at the sender's profile, they see that Nectar works with brands like theirs and gets results. If the playbook has an example post marked TEMPLATE, keep its wording and fill its slots. Use ONLY results from proof items. Nectar's company-wide results (proof items for "Nectar (all customers)") are always fine to use, credited to Nectar. Any customer-specific number must be credited to the customer it belongs to; you may name customers in the target's category even when they have no numbers. Set closest_category_used to the proof category you leaned on ("company" if you used only company-wide results).
 3. messages: exactly one set per person on the OUTREACH list (person_id = their person id), each with a connection note and a first DM. Each person has a CONNECTION TEMPLATE and a DM TEMPLATE from their track (PDF or Loom). KEEP THE TEMPLATE WORDING EXACTLY and only replace the {slots}; never mix a Loom template with a PDF one, never add sentences.
    - Use the SLOT VALUES given for each person where they exist. Fill any other slot from the evidence: {recent launch or campaign from their posts} = a few plain words naming something from their or their team's posts; {proof_customer} and {proof_result} = one proof item, credited to its customer.
