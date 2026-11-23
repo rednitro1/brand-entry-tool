@@ -1,0 +1,57 @@
+[{
+  "inputSource": "AlaniNutrition",
+  "type": "user",
+  "userName": "AlaniNutrition",
+  "url": "https://x.com/AlaniNutrition",
+  "twitterUrl": "https://twitter.com/AlaniNutrition",
+  "id": "880239078595231749",
+  "name": "Alani Nu",
+  "isVerified": false,
+  "profilePicture": "https://pbs.twimg.com/profile_images/2119853666261671936/PsYqCzjK_normal.jpg",
+  "coverPicture": "https://pbs.twimg.com/profile_banners/880239078595231749/1787777305",
+  "description": "‘Tis the season for a sweet treat... 🤫✨💋\nFind us at Target, Walmart, Costco, Sam’s Club, Kroger, The Vitamin Shoppe, GNC, Circle K, 7-Eleven + more 🌟",
+  "location": "",
+  "followers": 32677,
+  "following": 10,
+  "protected": false,
+  "status": "",
+  "canDm": false,
+  "canMediaTag": true,
+  "createdAt": "Thu Jun 29 01:38:45 +0000 2017",
+  "entities": {
+    "description": {},
+    "url": {
+      "urls": [
+        {
+          "display_url": "linktr.ee/AlaniNutrition",
+          "expanded_url": "https://linktr.ee/AlaniNutrition",
+          "indices": [
+            0,
+            23
+          ],
+          "url": "https://t.co/YT905CpiKU"
+        }
+      ]
+    }
+  },
+  "favouritesCount": 41326,
+  "isTranslator": false,
+  "mediaCount": 919,
+  "statusesCount": 26119,
+  "translatorTypeEnum": "none",
+  "affiliatesHighlightedLabel": {},
+  "professional": {
+    "category": [
+      {
+        "icon_name": "IconBriefcaseStroke",
+        "id": 389,
+        "name": "Food & Beverage Company"
+      }
+    ],
+    "professional_type": "Business",
+    "rest_id": "1496564544642031616"
+  },
+  "possiblySensitive": false,
+  "profileInterstitialType": "",
+  "hasGraduatedAccess": true
+}]

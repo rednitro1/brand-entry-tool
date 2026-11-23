@@ -55,3 +55,8 @@ Alternatives considered (to be filled with real numbers as I test):
 ### Social (live calls, 2026-11-22)
 - **Alani Nu's Instagram is age-restricted** ("You must be 18 years old or over to see this profile"), presumably because it's an energy drink. `apify/instagram-profile-scraper` still returns followers (1,549,728) and following (22) but no post count. `apify/instagram-post-scraper` returns zero posts, only a "Restricted profile" item. Any age-gated beverage or alcohol brand will hit the same wall with anonymous scrapers. Logged-in scraping is ruled out (no credentials in this tool).
 - **Fallback tried: Firecrawl Alexandria `scrapecreators instagram/user-posts`** returned `provider_unavailable` (503) twice. It wasn't billed.
+- **Page stats, one pull per platform (Alani Nu).** The handles come from the resolve step, out of the brand's own site footer:
+  - Instagram (`apify/instagram-profile-scraper`): 1,549,728 followers, 22 following. No post count, because the account is age-restricted.
+  - TikTok (`clockworks/tiktok-profile-scraper`, 1 result): 1.1M followers, 43 following, 459 videos, 11.1M likes.
+  - X (`apidojo/twitter-user-scraper`, follower/following extraction off, since it otherwise scrapes the whole follower list): 32,677 followers, 10 following, 26,119 posts.
+  - LinkedIn: a plain Firecrawl page fetch returns a firmographic card (still says "Type: Private") with no followers. Alexandria `orbisearch companies/enrich` returns 74,397 followers and 673 employees, billed 0 credits on this call.
