@@ -28,18 +28,63 @@ export function defaultProviders(env = process.env) {
 
 const sumCost = (...usages) => Math.round(usages.reduce((s, u) => s + Number(u?.costUsd || 0), 0) * 10000) / 10000;
 
-/* Wraps one module: status rows, log capture, cost, and error isolation. */
+const MAX_LOG_LINES = 300;
+const FLUSH_MS = 1000;
+
+/* Log lines are shown to anyone viewing the run, so they describe what the tool is doing
+   in plain words. Belt and braces: anything that looks like a credential is masked and
+   long provider messages are cut. */
+export function scrubLine(msg) {
+  return String(msg)
+    .replace(/([?&](token|key|api_key|apikey)=)[^&\s]+/gi, '$1***')
+    .replace(/\b(sk|sb_secret|fc|apify_api)[-_][A-Za-z0-9_-]{8,}/g, '***')
+    .replace(/\s+/g, ' ')
+    .slice(0, 240);
+}
+
+/* A module's live logger: say(msg) adds a line, say.progress(0..1) moves the module's bar.
+   Both are written to run_modules at most once a second while the module runs, so a
+   viewer polling the run sees lines as they happen. Progress only moves forward. */
+export function makeLiveLog({ db, runId, name, flushMs = FLUSH_MS, now = () => new Date() }) {
+  const lines = [];
+  let progress = 0;
+  let timer = null;
+  let inflight = Promise.resolve();
+  const flush = () => {
+    timer = null;
+    const patch = { log: lines.slice(), progress };
+    inflight = inflight.then(() => db.updateModule(runId, name, patch)).catch(() => {}); // a missed flush only delays lines
+    return inflight;
+  };
+  const schedule = () => { if (!timer) timer = setTimeout(flush, flushMs); };
+  const say = (msg) => {
+    if (lines.length >= MAX_LOG_LINES) return;
+    lines.push(`${now().toISOString()} ${scrubLine(msg)}`);
+    schedule();
+  };
+  say.progress = (p) => {
+    const v = Math.max(0, Math.min(0.99, Number(p) || 0));
+    if (v > progress) { progress = v; schedule(); }
+  };
+  /* Stop the timer and wait for any write in flight, so a late flush can't overwrite the
+     final row with an older, shorter log. */
+  const close = async () => { if (timer) clearTimeout(timer); timer = null; await inflight; return lines.slice(); };
+  return { say, close, lines };
+}
+
+/* Wraps one module: status rows, live log, cost, and error isolation. */
 async function runModule(db, runId, name, fn) {
-  const log = [];
-  const say = (m) => { log.push(`${new Date().toISOString().slice(11, 19)} ${m}`); };
-  await db.updateModule(runId, name, { status: 'running', started_at: new Date().toISOString() });
+  const live = makeLiveLog({ db, runId, name });
+  await db.updateModule(runId, name, { status: 'running', progress: 0, started_at: new Date().toISOString() });
   try {
-    const { result, costUsd = 0, detail = {}, status = 'done' } = await fn(say);
-    await db.updateModule(runId, name, { status, cost_usd: costUsd, detail, log, finished_at: new Date().toISOString() });
+    const { result, costUsd = 0, detail = {}, status = 'done' } = await fn(live.say);
+    const log = await live.close();
+    await db.updateModule(runId, name, { status, cost_usd: costUsd, detail, log, progress: 1, finished_at: new Date().toISOString() });
     return { ok: true, result, costUsd };
   } catch (err) {
-    say(`error: ${err.message}`);
-    await db.updateModule(runId, name, { status: 'failed', error: err.message.slice(0, 500), log, finished_at: new Date().toISOString() });
+    live.say(`Stopped: ${err.message}`);
+    const log = await live.close();
+    await db.updateModule(runId, name, { status: 'failed', error: err.message.slice(0, 500), log, progress: 1, finished_at: new Date().toISOString() });
     return { ok: false, error: err.message, costUsd: 0 };
   }
 }
@@ -66,6 +111,7 @@ export async function executeRun({ db, runId, input, providers = defaultProvider
     runModule(db, runId, 'profile', async (log) => {
       const fc = providers.firecrawl(); const claude = providers.claude();
       const profile = await buildProfile({ brand, fc, claude, log });
+      log('Saving brand profile');
       const cost = { firecrawl: fc.usage(), claude: claude.usage() };
       await db.saveProfile(brandRow.id, runId, { ...profile, cost });
       return { result: profile, costUsd: sumCost(cost.firecrawl, cost.claude), detail: { facts: profile.facts.length, rejected: profile.rejected.length, ownership: profile.ownership.status } };
@@ -77,13 +123,16 @@ export async function executeRun({ db, runId, input, providers = defaultProvider
       // Recent public posts for the top few wedge-persona people only (cost cap).
       const ranked = [...stakeholders].sort((a, b) => rank(a.persona) - rank(b.persona)).slice(0, MAX_PEOPLE_WITH_POSTS);
       const posts = new Map();
-      for (const s of ranked) {
+      if (ranked.length) log(`Reading recent LinkedIn posts for ${ranked.map((s) => s.full_name).join(', ')}`);
+      for (const [i, s] of ranked.entries()) {
         try {
-          const p = await fetchRecentPosts({ fc, profileUrl: s.linkedin_url, log });
+          const p = await fetchRecentPosts({ fc, profileUrl: s.linkedin_url, name: s.full_name, log });
           s.post_pattern = p.pattern;
           posts.set(s.linkedin_url, p.posts);
-        } catch (err) { log(`posts failed for ${s.full_name}: ${err.message}`); }
+        } catch (err) { log(`Couldn't read posts for ${s.full_name}: ${err.message}`); }
+        log.progress?.(0.6 + 0.35 * ((i + 1) / ranked.length));
       }
+      log('Saving stakeholders');
       const saved = await db.saveStakeholders(brandRow.id, runId, stakeholders);
       for (const row of saved) if (posts.has(row.linkedin_url)) await db.saveStakeholderPosts(row.id, posts.get(row.linkedin_url));
       await db.upsertBrand({ ...brand, gaps });
@@ -97,6 +146,7 @@ export async function executeRun({ db, runId, input, providers = defaultProvider
     runModule(db, runId, 'social', async (log) => {
       const apify = providers.apify(); const fc = providers.firecrawl();
       const rows = await pullPageStats({ socials: brand.socials, apify, fc, log });
+      log('Saving page stats');
       for (const row of rows) await db.saveSocialAccount(brandRow.id, row);
       const failed = rows.filter((x) => x.error).length;
       return {

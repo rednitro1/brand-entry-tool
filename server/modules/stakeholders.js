@@ -148,26 +148,33 @@ export async function findStakeholders({ brand, parentName = null, apollo, prosp
   const orgNames = [brand.name, brand.domain?.split('.')[0], parentName].filter(Boolean);
   const rows = [];
   if (brand.domain) {
+    log(`Searching Apollo for marketing, social, digital and CX leaders at ${brand.domain}`);
     try { rows.push(...await apollo.search({ q_organization_domains_list: [brand.domain], person_titles: APOLLO_TITLES })); }
-    catch (err) { log(`apollo domain search failed: ${err.message}`); }
+    catch (err) { log(`Apollo domain search failed: ${err.message}`); }
   }
+  log(`Searching Apollo by name: ${brand.name}`);
   try { rows.push(...await apollo.search({ q_keywords: brand.name, person_titles: APOLLO_TITLES })); }
-  catch (err) { log(`apollo keyword search failed: ${err.message}`); }
+  catch (err) { log(`Apollo name search failed: ${err.message}`); }
+  log.progress?.(0.15);
   const picks = pickReveals(rows, { maxReveals });
-  log(`apollo: ${rows.length} free rows -> revealing ${picks.length} (max ${maxReveals})`);
+  log(`Apollo: ${rows.length} possible matches, revealing the best ${picks.length} (1 credit each)`);
 
   const out = [];
-  for (const pick of picks) {
+  for (const [i, pick] of picks.entries()) {
     try {
       const person = await apollo.match(pick.id);
-      if (person?.linkedin_url) out.push(stakeholderFromApollo(person, classifyPersona(person.title) || pick.persona, { orgNames }));
-      else log(`apollo match had no LinkedIn URL for ${pick.first_name}`);
-    } catch (err) { log(`apollo match failed for ${pick.first_name}: ${err.message}`); }
+      if (person?.linkedin_url) {
+        const s = stakeholderFromApollo(person, classifyPersona(person.title) || pick.persona, { orgNames });
+        out.push(s);
+        log(`Found ${s.full_name}, ${s.title}${PERSONA_LABEL[s.persona] && s.persona !== 'team_social' ? ` (wedge persona: ${PERSONA_LABEL[s.persona]})` : ''}`);
+      } else log(`Apollo had no LinkedIn profile for ${pick.first_name}, skipped`);
+    } catch (err) { log(`Apollo reveal failed for ${pick.first_name}: ${err.message}`); }
+    log.progress?.(0.15 + 0.35 * ((i + 1) / picks.length));
   }
 
   const missing = PERSONAS.filter((p) => !coverage(out)[p]);
   if (missing.length && brand.domain) {
-    log(`missing after Apollo: ${missing.map((p) => PERSONA_LABEL[p]).join(', ')} -> Prospeo fallback`);
+    log(`Not in Apollo: ${missing.map((p) => PERSONA_LABEL[p]).join(', ')}. Trying Prospeo`);
     try {
       const res = await prospeo.search({
         company: { websites: { include: [brand.domain] } },
@@ -178,11 +185,13 @@ export async function findStakeholders({ brand, parentName = null, apollo, prosp
         const s = stakeholderFromProspeo(r);
         if (s.persona && s.linkedin_url && !known.has(s.linkedin_url)) { out.push(s); known.add(s.linkedin_url); }
       }
-      log(`prospeo: ${res.length} rows, ${out.filter((s) => s.found_via === 'prospeo').length} matched a persona`);
-    } catch (err) { log(`prospeo fallback failed: ${err.message}`); }
+      log(`Prospeo: ${res.length} people, ${out.filter((s) => s.found_via === 'prospeo').length} matched a persona`);
+    } catch (err) { log(`Prospeo search failed: ${err.message}`); }
   }
+  log.progress?.(0.6);
 
   const cov = coverage(out);
   const gaps = PERSONAS.filter((p) => !cov[p]).map((p) => ({ persona: p, note: `No ${PERSONA_LABEL[p]} found in Apollo or Prospeo.` }));
+  if (gaps.length) log(`Gaps: no ${gaps.map((g) => PERSONA_LABEL[g.persona]).join(', ')} found`);
   return { stakeholders: out, coverage: cov, gaps };
 }

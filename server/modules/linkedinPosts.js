@@ -57,9 +57,10 @@ export function postPattern(posts, now = new Date()) {
   };
 }
 
-export async function fetchRecentPosts({ fc, profileUrl, log = () => {} }) {
+export async function fetchRecentPosts({ fc, profileUrl, name = 'profile', log = () => {} }) {
   const data = await fc.alexandria('harvestapi', 'linkedin/profile-posts', { profile: profileUrl });
   const posts = (data?.elements || []).map((el) => mapPost(el, profileUrl)).filter((p) => p.url);
-  log(`linkedin posts ${profileUrl}: ${posts.length} (${posts.filter((p) => p.is_repost).length} reposts)`);
+  const reposts = posts.filter((p) => p.is_repost).length;
+  log(`${name}: ${posts.length} recent LinkedIn posts (${posts.length - reposts} own, ${reposts} reposts)`);
   return { posts, pattern: postPattern(posts) };
 }

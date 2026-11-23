@@ -85,31 +85,39 @@ export function extractSocialLinks(links) {
   return out;
 }
 
+const PLATFORM_NAME = { instagram: 'Instagram', tiktok: 'TikTok', x: 'X', linkedin: 'LinkedIn' };
+
 export async function resolveBrand({ input, fc, log = () => {} }) {
   const parsed = parseInput(input);
   const evidence = [];
 
+  log(parsed.kind === 'linkedin' ? `Reading LinkedIn company URL: ${parsed.linkedinSlug}` : `Looking up "${parsed.name}"`);
+  log(`Searching the web for ${parsed.name}'s official site`);
   const siteResults = await fc.search(`${parsed.name} official site`, { limit: 8 });
   const site = pickOfficialSite(siteResults, parsed.name);
-  log(site ? `official site: ${site.domain}` : 'official site not found in search results');
+  log.progress?.(0.4);
+  log(site ? `Official site: ${site.domain}` : 'No official site in the search results');
 
   let socials = {};
   if (site) {
+    log(`Reading ${site.domain} for its social links`);
     const page = await fc.scrape(site.url, { formats: ['links'], onlyMainContent: false });
     socials = extractSocialLinks(page.links);
     evidence.push({ claim: 'Social handles taken from the official site', url: site.url, label: 'verified' });
-    log(`socials from site: ${Object.keys(socials).join(', ') || 'none'}`);
+    log.progress?.(0.7);
+    log(Object.keys(socials).length ? `Found on the site: ${Object.entries(socials).map(([p, v]) => `${PLATFORM_NAME[p] || p} @${v.handle}`).join(', ')}` : 'No social links on the site');
   }
 
   if (parsed.kind === 'linkedin') {
     socials.linkedin = { handle: parsed.linkedinSlug, url: parsed.linkedinUrl, source: 'user_input' };
   } else if (!socials.linkedin) {
     // Many brand sites don't link LinkedIn. Search for the company page instead.
+    log('LinkedIn not linked from the site, searching LinkedIn company pages');
     const li = await fc.search(`site:linkedin.com/company ${parsed.name}`, { limit: 5 });
     const found = extractSocialLinks(li.map((r) => r.url)).linkedin;
     if (found) {
       socials.linkedin = { ...found, source: 'search', label: 'single_source' };
-      log(`linkedin via search: ${found.url} (unverified match)`);
+      log(`LinkedIn page from search: ${found.handle} (single source, not confirmed by the site)`);
     }
   }
 

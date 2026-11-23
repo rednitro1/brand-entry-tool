@@ -223,3 +223,77 @@ blockquote { margin: 4px 0 0; padding-left: 10px; border-left: 2px solid var(--l
 .code { max-width: 100%; }
 @media (max-width: 480px) { .socials { grid-template-columns: 1fr; } }
 .social { min-width: 0; }
+
+/* ------------------------------ live run console ------------------------------ */
+.hero.wide { max-width: 760px; }
+.console-wrap { grid-template-columns: minmax(0, 1fr); text-align: left; background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: 20px 22px; display: grid; gap: 12px; min-width: 0; }
+.console-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+.console-head .progress-title { margin: 0; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.elapsed { font: 500 13px/1 ui-monospace, SFMono-Regular, Menlo, monospace; color: var(--muted); font-variant-numeric: tabular-nums; }
+.meter { height: 10px; border-radius: 999px; background: var(--line); overflow: hidden; }
+.meter i { display: block; height: 100%; border-radius: inherit; background: var(--green); transition: width .6s ease; position: relative; overflow: hidden; }
+.meter i::after { content: ''; position: absolute; inset: 0; background: linear-gradient(90deg, transparent, rgba(255,255,255,.35), transparent); transform: translateX(-100%); animation: sheen 1.6s linear infinite; }
+.is-done .meter i::after, .is-failed .meter i::after { display: none; }
+.is-failed .meter i { background: var(--bad); }
+@keyframes sheen { to { transform: translateX(100%); } }
+.meter-row { display: flex; justify-content: space-between; gap: 12px; font-size: 13px; color: var(--ink-2); margin-top: -4px; }
+.meter-row strong { font-variant-numeric: tabular-nums; color: var(--ink); }
+.chips { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px 14px; }
+.chip { display: inline-flex; align-items: center; gap: 7px; font-size: 12.5px; color: var(--muted); }
+.chip .dot { width: 16px; height: 16px; border-radius: 50%; border: 1.5px solid var(--line); display: grid; place-items: center; font-size: 10px; font-weight: 700; }
+.chip .dot svg { width: 10px; height: 10px; }
+.chip.st-running, .chip.st-done { color: var(--ink); }
+.chip.st-running .dot { border-color: var(--green); border-top-color: transparent; animation: spin .9s linear infinite; }
+.chip.st-done .dot { background: var(--green); border-color: var(--green); color: #fff; }
+.chip.st-failed .dot, .chip.st-skipped .dot { border-color: var(--bad); color: var(--bad); }
+
+.console {
+  height: 300px; overflow-y: auto; overscroll-behavior: contain;
+  background: var(--night); color: #d7e3df; border-radius: 12px; padding: 12px 14px;
+  font: 12.5px/1.6 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+.console .line { display: grid; grid-template-columns: 44px 62px minmax(0, 1fr); gap: 8px; animation: linein .25s ease-out; }
+.console .t { color: #6f8a84; font-variant-numeric: tabular-nums; }
+.console .tag { color: #6f8a84; }
+.console .tag.m-resolve { color: #ffb572; }
+.console .tag.m-profile { color: #8ab4ff; }
+.console .tag.m-stakeholders { color: #3fd9a8; }
+.console .tag.m-social { color: #ffaddc; }
+.console .msg { overflow-wrap: anywhere; }
+.console .line.warn .msg { color: #f2c46b; }
+.console .line.muted { color: #6f8a84; display: block; }
+.console .cursor .msg { animation: blink 1s steps(1) infinite; color: var(--green); }
+@keyframes linein { from { opacity: 0; transform: translateY(3px); } }
+@keyframes blink { 50% { opacity: 0; } }
+.console-actions { display: flex; flex-wrap: wrap; gap: 10px; }
+@media (prefers-reduced-motion: reduce) {
+  .meter i, .console .line { transition: none; animation: none; }
+  .meter i::after, .console .cursor .msg, .chip.st-running .dot { animation: none; }
+}
+@media (max-width: 560px) {
+  .console { height: 260px; font-size: 11.5px; padding: 10px; }
+  .console .line { grid-template-columns: 38px minmax(0, 1fr); }
+  .console .tag { display: none; }
+  .console-wrap { padding: 16px; }
+}
+
+/* sidebar run badge: visible from every tab */
+.runbadge { display: grid; gap: 4px; margin: 16px 0 0; padding: 12px; border-radius: 12px; background: var(--night-2); border: 1px solid var(--night-3); color: #d7e3df; text-decoration: none; }
+.runbadge:hover { border-color: var(--green); }
+.rb-title { font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: #7d8a87; }
+.rb-name { font-weight: 600; color: #fff; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rb-bar { height: 4px; border-radius: 999px; background: var(--night-3); overflow: hidden; margin: 2px 0; }
+.rb-bar i { display: block; height: 100%; background: var(--green); transition: width .6s ease; }
+.rb-cta { font-size: 12px; color: #9fb3ae; }
+.runbadge.done { border-color: var(--green); }
+.runbadge.done .rb-cta { color: #3fd9a8; }
+.runbadge.failed .rb-cta { color: #ff8a80; }
+@media (max-width: 720px) {
+  .runbadge { margin: 0 0 0 auto; padding: 6px 10px; border-radius: 999px; display: block; white-space: nowrap; }
+  .runbadge .rb-title, .runbadge .rb-name, .runbadge .rb-bar { display: none; }
+}
+
+/* in-progress markers on Accounts and on an account page */
+.running-pill { margin-left: 8px; font-size: 11.5px; font-weight: 500; color: var(--info); border: 1px solid currentColor; border-radius: 999px; padding: 0 8px; white-space: nowrap; }
+.banner { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; padding: 12px 16px; border-radius: var(--radius-sm); background: var(--green-wash); color: var(--ink); font-size: 14px; margin-bottom: 16px; }
+.spinner { width: 14px; height: 14px; border-radius: 50%; border: 2px solid var(--green); border-top-color: transparent; animation: spin .9s linear infinite; flex: none; }

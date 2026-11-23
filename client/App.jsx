@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { api } from './api.js';
+import { overallProgress, mergeLogs } from '../shared/progress.js';
 
 /* ------------------------------- constants -------------------------------- */
 
@@ -62,21 +63,22 @@ export default function App() {
     return () => window.removeEventListener('popstate', onPop);
   }, []);
 
+  const live = useActiveRun();
   const tab = route.page === 'account' ? 'accounts' : route.page;
   return (
     <div className="shell">
-      <Sidebar tab={tab} go={go} />
+      <Sidebar tab={tab} go={go} live={live} />
       <main className="content">
-        {route.page === 'search' && <SearchPage go={go} />}
-        {route.page === 'accounts' && <AccountsPage go={go} />}
-        {route.page === 'account' && <AccountPage slug={route.slug} go={go} />}
-        {route.page === 'spend' && <SpendPage go={go} />}
+        {route.page === 'search' && <SearchPage go={go} live={live} />}
+        {route.page === 'accounts' && <AccountsPage go={go} live={live} />}
+        {route.page === 'account' && <AccountPage slug={route.slug} go={go} live={live} />}
+        {route.page === 'spend' && <SpendPage go={go} live={live} />}
       </main>
     </div>
   );
 }
 
-function Sidebar({ tab, go }) {
+function Sidebar({ tab, go, live }) {
   const items = [['search', 'Search', IconSearch], ['accounts', 'Accounts', IconList], ['spend', 'Spend', IconCoins]];
   return (
     <aside className="sidebar">
@@ -92,20 +94,85 @@ function Sidebar({ tab, go }) {
           </a>
         ))}
       </nav>
+      <RunBadge live={live} go={go} tab={tab} />
       <p className="byline">Prototype by Ben Sollitt. Recommends only; never acts on LinkedIn.</p>
     </aside>
   );
 }
 
+/* ------------------------------- active run -------------------------------- */
+
+/* The run lives on the server; this only remembers which run this browser started so
+   the bar and log survive switching tabs, refreshing or closing the tab. Polling happens
+   here, above the pages, so no page change can interrupt it. */
+const RUN_KEY = 'activeRun';
+const FINISHED = ['done', 'partial', 'failed'];
+const STALE_MS = 30 * 60 * 1000;
+
+function useActiveRun() {
+  const [active, setActive] = useState(() => { try { return JSON.parse(safeStore.get(RUN_KEY) || 'null'); } catch { return null; } });
+  const [run, setRun] = useState(null);
+  const [err, setErr] = useState('');
+
+  const start = useCallback((id, input) => {
+    const a = { id, input, at: new Date().toISOString() };
+    safeStore.set(RUN_KEY, JSON.stringify(a));
+    setRun(null); setErr(''); setActive(a);
+  }, []);
+  const clear = useCallback(() => { safeStore.set(RUN_KEY, ''); setActive(null); setRun(null); setErr(''); }, []);
+
+  useEffect(() => {
+    if (!active) return undefined;
+    let stop = false; let timer = null; let misses = 0;
+    async function tick() {
+      try {
+        const r = await api.run(active.id);
+        if (stop) return;
+        misses = 0; setErr(''); setRun(r);
+        const finished = FINISHED.includes(r.status);
+        // A run finished long ago (e.g. reopened tomorrow) is history, not "active".
+        if (finished && r.finished_at && Date.now() - new Date(r.finished_at) > STALE_MS) { clear(); return; }
+        if (!finished) timer = setTimeout(tick, 1500);
+      } catch (ex) {
+        if (stop) return;
+        if (ex.status === 404 || ex.status === 400) { clear(); return; }
+        // Network blip or deploy: keep the run, keep trying, say so after a few misses.
+        misses += 1;
+        if (misses >= 3) setErr('Lost connection to the server, retrying…');
+        timer = setTimeout(tick, Math.min(10000, 1500 * misses));
+      }
+    }
+    tick();
+    return () => { stop = true; clearTimeout(timer); };
+  }, [active?.id]);
+
+  const finished = run ? FINISHED.includes(run.status) : false;
+  return { active, run, err, finished, start, clear };
+}
+
+/* Elapsed seconds since the run started, ticking once a second while it runs. */
+function useElapsed(run) {
+  const [now, setNow] = useState(Date.now());
+  const running = run && !FINISHED.includes(run.status);
+  useEffect(() => {
+    if (!running) return undefined;
+    const t = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(t);
+  }, [running]);
+  if (!run?.started_at) return 0;
+  const end = run.finished_at ? new Date(run.finished_at).getTime() : now;
+  return Math.max(0, Math.round((end - new Date(run.started_at).getTime()) / 1000));
+}
+const clock = (s) => `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`;
+
 /* --------------------------------- search --------------------------------- */
 
-function SearchPage({ go }) {
+function SearchPage({ go, live }) {
   const [input, setInput] = useState('');
   const [code, setCode] = useState(safeStore.get('accessCode'));
   const [showCode, setShowCode] = useState(!safeStore.get('accessCode'));
   const [err, setErr] = useState('');
   const [busy, setBusy] = useState(false);
-  const [runId, setRunId] = useState(null);
 
   async function submit(e) {
     e.preventDefault();
@@ -113,7 +180,7 @@ function SearchPage({ go }) {
     try {
       safeStore.set('accessCode', code);
       const r = await api.startRun(input, code);
-      setRunId(r.runId);
+      live.start(r.runId, input.trim());
     } catch (ex) {
       setErr(ex.message);
       if (ex.status === 401) setShowCode(true);
@@ -122,10 +189,10 @@ function SearchPage({ go }) {
 
   return (
     <section className="center">
-      <div className="hero">
+      <div className={`hero${live.active ? ' wide' : ''}`}>
         <h1>Research a brand</h1>
         <p className="lede">Brand profile, wedge personas, social pages and receipts for every claim.</p>
-        {!runId ? (
+        {!live.active ? (
           <form onSubmit={submit} className="search">
             <div className="searchbar">
               <IconSearch />
@@ -140,68 +207,136 @@ function SearchPage({ go }) {
               <button type="button" className="link" onClick={() => setShowCode(true)}>Change access code</button>
             )}
             {err && <p className="error">{err}</p>}
-            <p className="hint">Live runs take 1 to 3 minutes and need an access code. Past research is open to everyone under <a href="/accounts" onClick={(e) => { e.preventDefault(); go({ page: 'accounts' }); }}>Accounts</a>.</p>
+            <p className="hint">Live runs take 1 to 3 minutes and need an access code. You can switch tabs while one runs. Past research is open to everyone under <a href="/accounts" onClick={(e) => { e.preventDefault(); go({ page: 'accounts' }); }}>Accounts</a>.</p>
           </form>
         ) : (
-          <RunProgress runId={runId} input={input} onDone={(slug) => go({ page: 'account', slug })} onReset={() => { setRunId(null); setInput(''); }} />
+          <RunConsole live={live} go={go} />
         )}
       </div>
     </section>
   );
 }
 
-function RunProgress({ runId, input, onDone, onReset }) {
-  const [run, setRun] = useState(null);
-  const [err, setErr] = useState('');
-  useEffect(() => {
-    let stop = false;
-    async function tick() {
-      try {
-        const r = await api.run(runId);
-        if (stop) return;
-        setRun(r);
-        const finished = ['done', 'partial', 'failed'].includes(r.status);
-        if (finished && r.brand?.slug && r.status !== 'failed') { setTimeout(() => !stop && onDone(r.brand.slug), 900); return; }
-        if (!finished) setTimeout(tick, 2500);
-      } catch (ex) { if (!stop) setErr(ex.message); }
-    }
-    tick();
-    return () => { stop = true; };
-  }, [runId]);
+const MODULE_TAG = { resolve: 'find', profile: 'profile', stakeholders: 'people', social: 'social' };
 
-  const byModule = Object.fromEntries((run?.modules || []).map((m) => [m.module, m]));
+function RunConsole({ live, go }) {
+  const { active, run, err, finished, clear } = live;
+  const elapsed = useElapsed(run);
+  const pct = Math.round(overallProgress(run) * 100);
+  const lines = mergeLogs(run?.modules || []);
+  const startedAt = run?.started_at ? new Date(run.started_at).getTime() : null;
+  const box = React.useRef(null);
+  const pinned = React.useRef(true);
+  const sawRunning = React.useRef(false);
+
+  // Follow new lines unless the reader scrolled up to look at something.
+  React.useLayoutEffect(() => { if (box.current && pinned.current) box.current.scrollTop = box.current.scrollHeight; }, [lines.length]);
+  const onScroll = () => { const b = box.current; if (b) pinned.current = b.scrollHeight - b.scrollTop - b.clientHeight < 24; };
+
+  // Open the account automatically only if the run finished while this page was open.
+  useEffect(() => {
+    if (run && !finished) sawRunning.current = true;
+    if (finished && sawRunning.current && run.status !== 'failed' && run.brand?.slug) {
+      const t = setTimeout(() => { clear(); go({ page: 'account', slug: run.brand.slug }); }, 1400);
+      return () => clearTimeout(t);
+    }
+    return undefined;
+  }, [finished, run?.status]);
+
+  const current = (run?.modules || []).filter((m) => m.status === 'running').map((m) => STEPS.find(([k]) => k === m.module)?.[1]);
+  const status = !run ? 'Starting…'
+    : run.status === 'failed' ? 'Run failed'
+      : finished ? (run.status === 'partial' ? 'Finished with gaps' : 'Finished')
+        : current.length ? current.join(' · ') : 'Working…';
+
   return (
-    <div className="progress">
-      <p className="progress-title">Researching <strong>{input}</strong></p>
-      <ol>
+    <div className={`console-wrap${run?.status === 'failed' ? ' is-failed' : finished ? ' is-done' : ''}`}>
+      <div className="console-head">
+        <p className="progress-title">{run?.status === 'failed' ? 'Could not research' : finished ? 'Researched' : 'Researching'} <strong>{run?.brand?.name || active.input}</strong></p>
+        <span className="elapsed" aria-label="Elapsed time">{clock(elapsed)}</span>
+      </div>
+      <div className="meter" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={pct} aria-label="Run progress">
+        <i style={{ width: `${pct}%` }} />
+      </div>
+      <div className="meter-row"><span>{status}</span><strong>{pct}%</strong></div>
+
+      <ol className="chips">
         {STEPS.map(([key, label]) => {
-          const st = byModule[key]?.status || 'queued';
-          return (
-            <li key={key} className={`step st-${st}`}>
-              <span className="dot">{st === 'done' ? <IconCheck /> : st === 'failed' || st === 'skipped' ? '!' : ''}</span>
-              <span>{label}</span>
-              <span className="state">{st === 'running' ? 'working…' : st === 'failed' ? 'failed' : st === 'skipped' ? 'skipped' : ''}</span>
-            </li>
-          );
+          const st = (run?.modules || []).find((m) => m.module === key)?.status || 'queued';
+          return <li key={key} className={`chip st-${st}`}><span className="dot">{st === 'done' ? <IconCheck /> : st === 'failed' || st === 'skipped' ? '!' : ''}</span>{label}</li>;
         })}
       </ol>
+
+      <div className="console" ref={box} onScroll={onScroll} role="log" aria-live="polite" aria-label="Run log">
+        {lines.length === 0 && <div className="line muted">Waiting for the server…</div>}
+        {lines.map((l, i) => (
+          <div key={i} className={`line${/failed|Couldn't|Stopped|Gaps:|no account found/i.test(l.text) ? ' warn' : ''}`}>
+            <span className="t">{l.at && startedAt ? clock(Math.max(0, Math.round((new Date(l.at) - startedAt) / 1000))) : (l.clock || '')}</span>
+            <span className={`tag m-${l.module}`}>{MODULE_TAG[l.module] || l.module}</span>
+            <span className="msg">{l.text}</span>
+          </div>
+        ))}
+        {run && !finished && <div className="line cursor"><span className="t" /><span className="tag" /><span className="msg">▍</span></div>}
+      </div>
+
       {err && <p className="error">{err}</p>}
-      {run?.status === 'failed' && (
-        <>
-          <p className="error">{run.error || 'The run failed.'}</p>
-          <button className="pill ghost" onClick={onReset}>Try another brand</button>
-        </>
+      {run?.status === 'failed' && lines.length === 0 && <p className="error">{run.error || 'The run failed.'}</p>}
+      {finished && (
+        <div className="console-actions">
+          {run.status !== 'failed' && run.brand?.slug && (
+            <button className="pill" onClick={() => { clear(); go({ page: 'account', slug: run.brand.slug }); }}>Open {run.brand.name}</button>
+          )}
+          <button className="pill ghost" onClick={clear}>Research another brand</button>
+        </div>
       )}
     </div>
   );
 }
 
+/* Small status card in the sidebar, visible from every tab while a run is active. */
+function RunBadge({ live, go, tab }) {
+  const { active, run, finished, clear } = live;
+  if (!active) return null;
+  const pct = Math.round(overallProgress(run) * 100);
+  const name = run?.brand?.name || active.input;
+  const failed = run?.status === 'failed';
+  const open = (e) => {
+    e.preventDefault();
+    if (finished && !failed && run.brand?.slug) { clear(); go({ page: 'account', slug: run.brand.slug }); } else go({ page: 'search' });
+  };
+  if (tab === 'search') return null; // the full console and its buttons are already on screen
+  return (
+    <a href="/" className={`runbadge${failed ? ' failed' : finished ? ' done' : ''}`} onClick={open}>
+      <span className="rb-title">{failed ? 'Run failed' : finished ? 'Research ready' : 'Researching'}</span>
+      <span className="rb-name">{name}</span>
+      {!finished && <span className="rb-bar"><i style={{ width: `${pct}%` }} /></span>}
+      <span className="rb-cta">{failed ? 'See what happened' : finished ? 'Open account →' : `${pct}% · view log`}</span>
+    </a>
+  );
+}
+
+/* Loads page data, reloads when this browser's run finishes, and re-checks every few
+   seconds while the data says something is still running (e.g. a run started elsewhere). */
+function useLiveData(load, deps, stillRunning) {
+  const [data, setData] = useState(null);
+  const [err, setErr] = useState('');
+  useEffect(() => {
+    let stop = false; let timer = null;
+    const fetchIt = (first) => load().then((d) => {
+      if (stop) return;
+      setData(d); setErr('');
+      if (stillRunning(d)) timer = setTimeout(() => fetchIt(false), 8000);
+    }).catch((ex) => { if (!stop && first) setErr(ex.message); else if (!stop) timer = setTimeout(() => fetchIt(false), 8000); });
+    fetchIt(true);
+    return () => { stop = true; clearTimeout(timer); };
+  }, deps);
+  return { data, err, setData };
+}
+
 /* -------------------------------- accounts -------------------------------- */
 
-function AccountsPage({ go }) {
-  const [rows, setRows] = useState(null);
-  const [err, setErr] = useState('');
-  useEffect(() => { api.brands().then(setRows).catch((ex) => setErr(ex.message)); }, []);
+function AccountsPage({ go, live }) {
+  const { data: rows, err } = useLiveData(() => api.brands(), [live.finished], (d) => d.some((b) => b.running));
   return (
     <section className="page">
       <header className="page-head"><h1>Accounts</h1><p className="muted">Every brand researched so far.</p></header>
@@ -213,7 +348,7 @@ function AccountsPage({ go }) {
             <tbody>
               {rows.map((b) => (
                 <tr key={b.slug} className="clickable" onClick={() => go({ page: 'account', slug: b.slug })}>
-                  <td><strong>{b.name}</strong><div className="muted small">{b.domain || ''}</div></td>
+                  <td><strong>{b.name}</strong>{b.running && <span className="running-pill">Researching…</span>}<div className="muted small">{b.domain || ''}</div></td>
                   <td>{b.owner || <span className="muted">—</span>}</td>
                   <td className="num">{b.wedge_count ? <span className="wedge-count">{b.wedge_count}</span> : <span className="muted">0</span>}</td>
                   <td className="num">{b.people_count}</td>
@@ -228,12 +363,10 @@ function AccountsPage({ go }) {
   );
 }
 
-function AccountPage({ slug, go }) {
-  const [b, setB] = useState(null);
-  const [err, setErr] = useState('');
-  useEffect(() => { setB(null); setErr(''); api.brand(slug).then(setB).catch((ex) => setErr(ex.message)); }, [slug]);
+function AccountPage({ slug, go, live }) {
+  const { data: b, err } = useLiveData(() => api.brand(slug), [slug, live.finished], (d) => ['running', 'queued'].includes(d?.lastRun?.status));
   if (err) return <section className="page"><p className="error">{err}</p></section>;
-  if (!b) return <section className="page"><p className="muted">Loading…</p></section>;
+  if (!b || b.brand?.slug !== slug) return <section className="page"><p className="muted">Loading…</p></section>;
 
   const { brand, profile, stakeholders, social, lastRun } = b;
   const facts = profile?.facts || [];
@@ -253,6 +386,14 @@ function AccountPage({ slug, go }) {
         </p>
         {profile && <OwnershipLine own={profile.ownership} reporting={profile.reporting} factById={factById} />}
       </header>
+
+      {['running', 'queued'].includes(lastRun?.status) && (
+        <div className="banner">
+          <span className="spinner" aria-hidden="true" />
+          <span>New research is running for {brand.name}. This page updates when it finishes{!profile ? '; until then some sections are empty' : ', and shows the previous results until then'}.</span>
+          {live.active?.id === lastRun.id && <button className="link" onClick={() => go({ page: 'search' })}>View log</button>}
+        </div>
+      )}
 
       {profile && (profile.summary || []).length > 0 && (
         <div className="card">
@@ -406,11 +547,9 @@ function Label({ value }) {
 
 /* ---------------------------------- spend --------------------------------- */
 
-function SpendPage({ go }) {
-  const [data, setData] = useState(null);
-  const [err, setErr] = useState('');
+function SpendPage({ go, live }) {
+  const { data, err } = useLiveData(() => api.runs(), [live.finished], (d) => d.runs.some((r) => ['running', 'queued'].includes(r.status)));
   const [open, setOpen] = useState(null);
-  useEffect(() => { api.runs().then(setData).catch((ex) => setErr(ex.message)); }, []);
   if (err) return <section className="page"><p className="error">{err}</p></section>;
   if (!data) return <section className="page"><p className="muted">Loading…</p></section>;
 

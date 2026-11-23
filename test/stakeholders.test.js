@@ -109,7 +109,7 @@ test('findStakeholders (stub): a failed match is logged and skipped, run continu
   const logs = [];
   const apollo = stubApollo({ matchFails: new Set([domainRows[0].id]) });
   const r = await findStakeholders({ brand: { name: 'Alani Nu', domain: 'alaninu.com' }, apollo, prospeo: stubProspeo([]), log: (m) => logs.push(m) });
-  assert.ok(logs.some((l) => /apollo match failed for Kira/.test(l)));
+  assert.ok(logs.some((l) => /Apollo reveal failed for Kira/.test(l)));
   assert.equal(r.coverage.director_social, false);
   assert.equal(r.gaps.length, 4);
 });

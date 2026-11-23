@@ -28,7 +28,8 @@ export function makeDb(url, key) {
       const ids = brands.map((b) => b.id);
       const profiles = must(await sb.from('brand_profiles').select('brand_id,ownership,created_at').in('brand_id', ids).order('created_at', { ascending: false }), 'listBrands profiles');
       const people = must(await sb.from('stakeholders').select('brand_id,run_id,persona,created_at').in('brand_id', ids).order('created_at', { ascending: false }), 'listBrands people');
-      return summarizeBrands(brands, profiles, people);
+      const active = must(await sb.from('runs').select('brand_id').in('brand_id', ids).in('status', ['queued', 'running']), 'listBrands active');
+      return summarizeBrands(brands, profiles, people, active);
     },
     /* Spend tab. No IP hashes, no raw inputs: brand name, status, timing and costs only. */
     async listRuns() {
@@ -57,7 +58,7 @@ export function makeDb(url, key) {
     async getRun(runId) {
       const run = must(await sb.from('runs').select('id,brand_id,input,status,cost_usd,error,started_at,finished_at,created_at').eq('id', runId).maybeSingle(), 'getRun');
       if (!run) return null;
-      const modules = must(await sb.from('run_modules').select('module,status,cost_usd,log,error,detail,started_at,finished_at').eq('run_id', runId), 'getRunModules');
+      const modules = must(await sb.from('run_modules').select('module,status,progress,cost_usd,log,error,detail,started_at,finished_at').eq('run_id', runId), 'getRunModules');
       const brand = run.brand_id ? must(await sb.from('brands').select('slug,name').eq('id', run.brand_id).maybeSingle(), 'getRunBrand') : null;
       return { ...run, brand, modules };
     },
@@ -120,7 +121,7 @@ export function makeDb(url, key) {
         ? must(await sb.from('stakeholders').select('*, stakeholder_posts(url,posted_at,text,is_repost,reactions,comments,topic)').eq('brand_id', brand.id).eq('run_id', lastPeople.run_id), 'bundle people')
         : [];
       const social = must(await sb.from('social_accounts').select('*').eq('brand_id', brand.id), 'bundle social');
-      const lastRun = must(await sb.from('runs').select('id,status,cost_usd,started_at,finished_at').eq('brand_id', brand.id).order('created_at', { ascending: false }).limit(1).maybeSingle(), 'bundle run');
+      const lastRun = must(await sb.from('runs').select('id,status,cost_usd,started_at,finished_at,created_at').eq('brand_id', brand.id).order('created_at', { ascending: false }).limit(1).maybeSingle(), 'bundle run');
       return { brand, profile, stakeholders, social, lastRun };
     },
   };
@@ -130,7 +131,8 @@ export const WEDGE = new Set(['cmo', 'director_social', 'chief_digital', 'direct
 
 /* Pure helpers (tested): latest profile per brand for the owner; wedge count from that
    brand's latest stakeholder run only. */
-export function summarizeBrands(brands, profiles, people) {
+export function summarizeBrands(brands, profiles, people, active = []) {
+  const running = new Set(active.map((r) => r.brand_id));
   return brands.map((b) => {
     const prof = profiles.find((p) => p.brand_id === b.id);
     const latestRun = people.find((p) => p.brand_id === b.id)?.run_id;
@@ -142,6 +144,7 @@ export function summarizeBrands(brands, profiles, people) {
     return {
       slug: b.slug, name: b.name, domain: b.domain, is_example: b.is_example, updated_at: b.updated_at,
       owner, wedge_count: mine.filter((p) => WEDGE.has(p.persona)).length, people_count: mine.length,
+      running: running.has(b.id),
     };
   });
 }

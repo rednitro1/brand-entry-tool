@@ -60,3 +60,10 @@ Alternatives considered (to be filled with real numbers as I test):
   - TikTok (`clockworks/tiktok-profile-scraper`, 1 result): 1.1M followers, 43 following, 459 videos, 11.1M likes.
   - X (`apidojo/twitter-user-scraper`, follower/following extraction off, since it otherwise scrapes the whole follower list): 32,677 followers, 10 following, 26,119 posts.
   - LinkedIn: a plain Firecrawl page fetch returns a firmographic card (still says "Type: Private") with no followers. Alexandria `orbisearch companies/enrich` returns 74,397 followers and 673 employees, billed 0 credits on this call.
+
+## Live run log and progress bar
+- **What:** each module streams plain-English log lines plus a 0..1 progress value to `run_modules` (at most one write a second). The page polls the run every 1.5s and shows a weighted progress bar and a console.
+- **Why polling, not SSE/websockets:** the run already lives in Postgres and the page already polled. Polling survives refreshes, deploys and flaky networks with no extra infrastructure.
+- **Switching tabs:** the active run id is held above the pages and in the browser, so tabs, refreshes and closing the tab don't lose it. The sidebar shows its status everywhere. The account only auto-opens if the run finishes while Search is on screen; otherwise the sidebar offers "Open account" and nothing yanks the viewer away.
+- **Safety:** log lines say what the tool is doing, never keys, emails or raw responses; a scrubber masks anything token-shaped. Bad input (non-LinkedIn URLs) is refused before a run starts.
+- **Testing without spend:** `FAKE_MODE=1` runs the server on an in-memory database with recorded responses and delays. It refuses to start on Railway or with NODE_ENV=production.

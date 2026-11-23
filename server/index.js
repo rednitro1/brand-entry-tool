@@ -4,6 +4,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { loadEnv } from './env.js';
 import { hashIp, checkAccessCode, makeRateLimiter, checkSpendCap } from './guard.js';
+import { parseInput } from './modules/resolve.js';
 
 loadEnv();
 
@@ -28,7 +29,16 @@ for (const [k, v] of Object.entries({ SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY })
   if (!v) console.error(`[config] missing required env var ${k}`);
 }
 
-const db = makeDb(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+/* FAKE_MODE=1 is a local-only test harness (in-memory db, recorded responses, no spend).
+   It refuses to start anywhere that looks like a deployment. */
+const FAKE = process.env.FAKE_MODE === '1';
+if (FAKE && (process.env.NODE_ENV === 'production' || process.env.RAILWAY_ENVIRONMENT)) {
+  console.error('[config] FAKE_MODE is for local testing only; refusing to start.');
+  process.exit(1);
+}
+const fake = FAKE ? await import('./devFake.js') : null;
+if (FAKE) console.log('[server] FAKE_MODE: in-memory db, recorded responses, no API spend');
+const db = FAKE ? fake.makeMemDb() : makeDb(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 await db.failOrphanedRuns().catch((err) => console.error(`[boot] could not clear orphaned runs: ${err.message}`));
 
 const app = express();
@@ -72,6 +82,8 @@ app.post('/api/runs', wrap(async (req, res) => {
 
   const input = String(req.body?.input || '').trim();
   if (!input || input.length > 200) return res.status(400).json({ error: 'Enter a brand name or a LinkedIn company URL.' });
+  // Reject input the run would fail on anyway, before it costs a run or a rate-limit slot.
+  try { parseInput(input); } catch (err) { return res.status(400).json({ error: err.message }); }
 
   const ipHash = hashIp(req.ip, IP_HASH_SALT);
   const { spentTodayUsd, activeRuns } = await db.spendToday();
@@ -84,7 +96,7 @@ app.post('/api/runs', wrap(async (req, res) => {
 
   const run = await db.createRun({ input, ipHash, modules: MODULES });
   // Background: the request returns now; the UI polls /api/runs/:id.
-  executeRun({ db, runId: run.id, input }).catch(async (err) => {
+  executeRun({ db, runId: run.id, input, ...(FAKE ? { providers: fake.makeFakeProviders() } : {}) }).catch(async (err) => {
     console.error(`[run ${run.id}] crashed: ${err.message}`);
     await db.finishRun(run.id, { status: 'failed', costUsd: 0, error: err.message }).catch(() => {});
   });

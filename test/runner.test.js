@@ -83,3 +83,14 @@ test('executeRun (stub): resolve fails -> other modules skipped, run failed', as
   assert.equal(db.s.modules.profile.status, 'skipped');
   assert.equal(db.s.run.status, 'failed');
 });
+
+test('executeRun (stub): every module ends with progress 1 and plain-English log lines', async () => {
+  const db = memDb();
+  await executeRun({ db, runId: 'r9', input: 'Alani Nu', providers: stubProviders() });
+  for (const m of MODULES) assert.equal(db.s.modules[m].progress, 1, `${m} progress`);
+  const all = MODULES.flatMap((m) => db.s.modules[m].log || []);
+  assert.ok(all.every((l) => /^\d{4}-\d{2}-\d{2}T[\d:.]+Z /.test(l)), 'every line is timestamped');
+  assert.ok(all.some((l) => l.includes('Found Kira Lazzarini, Director of Social Media') && l.includes('(wedge persona: Director of Social)')));
+  assert.ok(all.some((l) => l.includes('LinkedIn @alani-nutrition: 74,397 followers')));
+  assert.ok(!all.some((l) => /@\S+\.(com|co)\b/.test(l) && l.includes('email')), 'no emails in the log');
+});

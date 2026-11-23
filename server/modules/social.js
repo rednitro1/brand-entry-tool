@@ -62,17 +62,29 @@ const SOURCES = {
 export const PLATFORMS = Object.keys(SOURCES);
 
 /* Returns one row per platform: stats, or an error/"not found" row so the UI shows a gap. */
+const NAME = { instagram: 'Instagram', tiktok: 'TikTok', x: 'X', linkedin: 'LinkedIn' };
+
 export async function pullPageStats({ socials, apify, fc, log = () => {} }) {
+  let done = 0;
+  const tick = () => log.progress?.(++done / PLATFORMS.length);
+  const found = PLATFORMS.filter((p) => socials?.[p]);
+  if (found.length) log(`Pulling page stats for ${found.map((p) => NAME[p]).join(', ')}`);
   return Promise.all(PLATFORMS.map(async (platform) => {
     const s = socials?.[platform];
     const base = { platform, stats_source: SOURCES[platform].source };
-    if (!s) return { ...base, handle: '', url: '', followers: null, following: null, post_count: null, error: 'No account found on the brand site or in search.' };
+    if (!s) {
+      log(`${NAME[platform]}: no account found, leaving a gap`);
+      tick();
+      return { ...base, handle: '', url: '', followers: null, following: null, post_count: null, error: 'No account found on the brand site or in search.' };
+    }
     try {
       const stats = await SOURCES[platform].pull({ apify, fc }, s);
-      log(`${platform} @${s.handle}: ${stats.followers ?? '?'} followers`);
+      log(`${NAME[platform]} @${s.handle}: ${stats.followers === null || stats.followers === undefined ? 'follower count not shown' : `${Number(stats.followers).toLocaleString('en-US')} followers`}`);
+      tick();
       return { ...base, handle: s.handle, url: s.url, ...stats, error: null };
     } catch (err) {
-      log(`${platform} failed: ${err.message}`);
+      log(`${NAME[platform]} failed, continuing with a gap: ${err.message}`);
+      tick();
       return { ...base, handle: s.handle, url: s.url, followers: null, following: null, post_count: null, error: err.message };
     }
   }));

@@ -1,6 +1,7 @@
 {
   "version": "0.0.1",
   "configurations": [
-    { "name": "brand-entry-tool", "runtimeExecutable": "env", "runtimeArgs": ["PORT=8091", "RUN_ACCESS_CODE=local-test", "RATE_LIMIT_RUNS_PER_IP_PER_HOUR=2", "node", "server/index.js"], "port": 8091 }
+    { "name": "brand-entry-tool", "runtimeExecutable": "env", "runtimeArgs": ["PORT=8091", "RUN_ACCESS_CODE=local-test", "RATE_LIMIT_RUNS_PER_IP_PER_HOUR=2", "node", "server/index.js"], "port": 8091 },
+    { "name": "brand-entry-tool-fake", "runtimeExecutable": "env", "runtimeArgs": ["PORT=8092", "FAKE_MODE=1", "RUN_ACCESS_CODE=local-test", "RATE_LIMIT_RUNS_PER_IP_PER_HOUR=50", "node", "server/index.js"], "port": 8092 }
   ]
 }

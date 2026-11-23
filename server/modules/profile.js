@@ -187,29 +187,36 @@ export function describeReporting(ownership, brand, result) {
 
 export async function buildProfile({ brand, fc, claude, log = () => {} }) {
   const results = [];
-  for (const { q, limit } of profileQueries(brand)) {
-    try { results.push(...await fc.search(q, { limit })); } catch (err) { log(`search failed (${q}): ${err.message}`); }
+  const queries = profileQueries(brand);
+  for (const [i, { q, limit }] of queries.entries()) {
+    log(`Searching: ${q}`);
+    try { results.push(...await fc.search(q, { limit })); } catch (err) { log(`Search failed (${q}): ${err.message}`); }
+    log.progress?.(0.15 * ((i + 1) / queries.length));
   }
   if (brand.siteUrl) results.unshift({ url: brand.siteUrl, title: `${brand.name} official site` });
   const chosen = choosePages(results, brand);
-  log(`${results.length} search results -> fetching ${chosen.length} pages`);
+  log(`${results.length} search results, reading the best ${chosen.length} pages`);
 
-  const pages = await fetchPages(chosen, fc, log);
+  const pages = await fetchPages(chosen, fc, log, (done) => log.progress?.(0.15 + 0.3 * (done / chosen.length)));
   if (pages.length === 0) throw new Error('No readable sources found for this brand.');
   const truncated = pages.filter((p) => p.markdown.length > MAX_CHARS_PER_PAGE).length;
-  if (truncated) log(`${truncated} long page(s) truncated to ${MAX_CHARS_PER_PAGE} chars for the model`);
+  if (truncated) log(`${truncated} long page(s) trimmed to fit the model`);
 
+  log(`Asking Claude to pull facts from ${pages.length} page${pages.length === 1 ? '' : 's'} (every fact needs a quote from its page)`);
   const { parsed } = await claude.structured({ system: SYSTEM, user: buildSourcesPrompt(brand, pages), schema: ProfileSchema, effort: 'medium' });
+  log.progress?.(0.75);
+  log(`Claude returned ${parsed.facts.length} facts, checking each quote against its page`);
 
   // Decide ownership on receipts-checked facts before spending anything on reports.
   const firstPass = finalizeProfile(parsed, pages, brand);
   const own = firstPass.ownership;
-  log(`ownership: ${own.status}${own.parent_company ? ` (parent: ${own.parent_company})` : ''}${own.as_of ? ` as of ${own.as_of}` : ''}`);
+  log(`Ownership: ${OWN_TEXT[own.status] || own.status}${own.parent_company ? `, parent ${own.parent_company}` : ''}${own.as_of ? ` (as of ${own.as_of})` : ''}`);
   const entity = reportingEntity(own, new Set(own.fact_ids), brand);
   if (!entity) {
-    log('no public quarterly reporting to pull');
+    log('No public quarterly reports to pull for this company');
     return firstPass;
   }
+  log(`Looking for ${entity.name}'s latest quarterly report`);
 
   /* Pass 2: quarterly reports from the reporting entity. A sub-brand's latest numbers
      live in the parent's release, which brand-name searches don't surface (Alani Nu's
@@ -220,7 +227,9 @@ export async function buildProfile({ brand, fc, claude, log = () => {} }) {
     const have = new Set(pages.map((p) => urlKey(p.url)));
     const fresh = hits.filter((r) => !have.has(urlKey(r.url))).slice(0, 2);
     const extra = await fetchPages(fresh, fc, log);
+    log.progress?.(0.85);
     if (extra.length) {
+      log(`Asking Claude for ${brand.name}'s numbers in ${extra.length} report page(s)`);
       const { parsed: p2 } = await claude.structured({
         system: SYSTEM,
         user: `${buildSourcesPrompt(brand, extra)}\nThese are quarterly reports from ${entity.name}. Extract ${brand.name}'s most recent reported results (kind=financial). Only state a number as ${brand.name}'s if the source attributes it to ${brand.name}. Use ids q1, q2, ...`,
@@ -232,26 +241,33 @@ export async function buildProfile({ brand, fc, claude, log = () => {} }) {
       pages.push(...extra);
       const kept = validateClaims(p2.facts, extra, { primaryHints: [entity.domain].filter(Boolean) }).accepted;
       reportResult = { urls: extra.map((p) => p.url), brandFacts: kept.filter((f) => f.kind === 'financial').length };
-      log(`reports (${entity.name}): ${extra.length} page(s), ${reportResult.brandFacts} ${brand.name} financial fact(s)`);
-    } else log(`reports (${entity.name}): none found`);
-  } catch (err) { log(`report pass skipped: ${err.message}`); }
+      log(`Quarterly report: ${reportResult.brandFacts} ${brand.name} financial fact(s) with receipts`);
+    } else log(`No quarterly report found for ${entity.name}`);
+  } catch (err) { log(`Skipped the quarterly report: ${err.message}`); }
 
   const profile = finalizeProfile(parsed, pages, brand, describeReporting(own, brand, reportResult));
   profile.ownership = own; // keep the first-pass decision; pass 2 is about numbers, not ownership
-  log(`facts: ${profile.facts.length} kept, ${profile.rejected.length} rejected (no receipt); conflicts: ${profile.conflicts.length}`);
+  log(`Profile done: ${profile.facts.length} facts kept, ${profile.rejected.length} dropped for no receipt, ${profile.conflicts.length} source conflict(s)`);
   return profile;
 }
 
-async function fetchPages(list, fc, log) {
+async function fetchPages(list, fc, log, onPage = () => {}) {
   const pages = [];
+  let done = 0;
   await Promise.all(list.map(async (r) => {
     try {
       const p = await fc.scrape(r.url, { formats: ['markdown'] });
-      if (p.markdown && p.markdown.length > 200) pages.push({ url: r.url, title: p.title || r.title, markdown: p.markdown, publishedAt: p.publishedAt });
-      else log(`skipped thin page: ${r.url}`);
-    } catch (err) { log(`fetch failed ${r.url}: ${err.message}`); }
+      if (p.markdown && p.markdown.length > 200) {
+        pages.push({ url: r.url, title: p.title || r.title, markdown: p.markdown, publishedAt: p.publishedAt });
+        log(`Read ${shortUrl(r.url)}`);
+      } else log(`Skipped ${shortUrl(r.url)} (almost no text)`);
+    } catch (err) { log(`Couldn't read ${shortUrl(r.url)}: ${err.message}`); }
+    onPage(++done);
   }));
   return pages;
 }
+
+const OWN_TEXT = { subsidiary: 'subsidiary', independent_public: 'independent, publicly traded', independent_private: 'independent, private', unknown: 'not determined' };
+const shortUrl = (u) => { try { const x = new URL(u); const p = x.pathname.length > 40 ? `${x.pathname.slice(0, 40)}…` : x.pathname; return x.hostname.replace(/^www\./, '') + (p === '/' ? '' : p); } catch { return String(u).slice(0, 60); } };
 
 const slugEq = (a, b) => String(a).toLowerCase().replace(/[^a-z0-9]/g, '').includes(String(b).toLowerCase().replace(/[^a-z0-9]/g, ''));
