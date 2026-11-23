@@ -216,3 +216,8 @@ blockquote { margin: 4px 0 0; padding-left: 10px; border-left: 2px solid var(--l
 .people { min-width: 760px; }
 .card.flush { overflow-x: auto; }
 .list { min-width: 560px; }
+/* let the centered hero shrink below the input's intrinsic width on narrow screens */
+.center { grid-template-columns: minmax(0, 1fr); }
+.hero { min-width: 0; justify-self: center; }
+.searchbar input { width: 100%; }
+.code { max-width: 100%; }
