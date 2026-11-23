@@ -935,6 +935,19 @@ function cleanPlaybook(pb) {
   };
 }
 
+const PROOF_KIND = { result: 'Result', quote: 'Quote', customer: 'Customer', company: 'Company-wide' };
+const count = (arr, one, many = `${one}s`) => { const n = (arr || []).filter((x) => String(x).trim()).length; return `${n} ${n === 1 ? one : many}`; };
+
+/* A collapsible Playbook section: title and a one-line summary, closed by default. */
+function Section({ title, meta, children }) {
+  return (
+    <details className="card section">
+      <summary><h2>{title}</h2>{meta && <span className="muted small">{meta}</span>}</summary>
+      <div className="section-body">{children}</div>
+    </details>
+  );
+}
+
 function PlaybookPage() {
   const [pb, setPb] = useState(null);
   const [meta, setMeta] = useState(null);
@@ -943,6 +956,7 @@ function PlaybookPage() {
   const [code, setCode] = useState(safeStore.get('accessCode'));
   const [busy, setBusy] = useState(false);
   const [dirty, setDirty] = useState(false);
+  const [added, setAdded] = useState([]); // proof entries added this visit start open
   useEffect(() => { api.playbook().then((r) => { setPb(r.content); setMeta(r); }).catch((ex) => setErr(ex.message)); }, []);
   if (err && !pb) return <section className="page"><p className="error">{err}</p></section>;
   if (!pb) return <section className="page"><p className="muted">Loading…</p></section>;
@@ -984,28 +998,31 @@ function PlaybookPage() {
         </p>
       </header>
 
-      <div className="card">
-        <h2>You</h2>
+      <Section title="You" meta={[pb.sender.name, pb.sender.role].filter(Boolean).join(' · ')}>
         <div className="grid2">
           <label className="field"><span className="field-label">Name</span><input value={pb.sender.name} onChange={(e) => set(['sender', 'name'], e.target.value)} /></label>
           <label className="field"><span className="field-label">Role</span><input value={pb.sender.role} onChange={(e) => set(['sender', 'role'], e.target.value)} /></label>
         </div>
         <label className="field"><span className="field-label">LinkedIn headline</span><input value={pb.sender.headline} onChange={(e) => set(['sender', 'headline'], e.target.value)} placeholder="What people see under your name" /></label>
-      </div>
+      </Section>
 
-      <div className="card">
-        <h2>What Nectar sells</h2>
+      <Section title="What Nectar sells" meta={`${count(pb.product.value_props, 'value prop')} · ${count(pb.product.pains, 'pain')}`}>
         {T({ label: 'One-liner', rows: 3, value: pb.product.one_liner, onChange: (v) => set(['product', 'one_liner'], v) })}
         {T({ label: 'Value props', hint: 'One per line', rows: 5, value: lines(pb.product.value_props), onChange: (v) => set(['product', 'value_props'], unlines(v)) })}
         {T({ label: "Who it's for", rows: 2, value: pb.product.who_its_for, onChange: (v) => set(['product', 'who_its_for'], v) })}
         {T({ label: 'Pains it solves', hint: 'One per line', rows: 4, value: lines(pb.product.pains), onChange: (v) => set(['product', 'pains'], unlines(v)) })}
-      </div>
+      </Section>
 
-      <div className="card">
-        <div className="card-head"><h2>Proof library</h2><span className="muted small">The only results drafts may state, each credited to its customer</span></div>
+      <Section title="Proof library" meta={`${count(pb.proof, 'entry', 'entries')} from ${count([...new Set(pb.proof.map((p) => p.customer).filter(Boolean))], 'customer')}`}>
+        <p className="muted small">The only results drafts may state, each credited to its customer.</p>
         <div className="proofs">
           {pb.proof.map((p, i) => (
-            <div key={p.id} className="proof">
+            <details key={p.id} className="proof" open={added.includes(p.id) || undefined}>
+              <summary>
+                <strong>{p.customer || 'New entry'}</strong>
+                <span className="kind">{PROOF_KIND[p.kind] || p.kind}</span>
+                <span className="proof-claim">{p.claim}</span>
+              </summary>
               <div className="grid3">
                 <label className="field"><span className="field-label">Customer</span><input value={p.customer} onChange={(e) => set(['proof', i, 'customer'], e.target.value)} /></label>
                 <label className="field"><span className="field-label">Category</span><input value={p.category} onChange={(e) => set(['proof', i, 'category'], e.target.value)} /></label>
@@ -1020,39 +1037,38 @@ function PlaybookPage() {
                 <label className="field grow"><span className="field-label">Source URL</span><input value={p.source_url} onChange={(e) => set(['proof', i, 'source_url'], e.target.value)} /></label>
                 <button className="link danger" onClick={() => set(['proof'], pb.proof.filter((_, j) => j !== i))}>Remove</button>
               </div>
-            </div>
+            </details>
           ))}
         </div>
         <button className="pill ghost" onClick={() => {
           const n = Math.max(0, ...pb.proof.map((p) => Number(String(p.id).replace(/\D/g, '')) || 0)) + 1;
           set(['proof'], [...pb.proof, { id: `p${n}`, customer: '', category: '', claim: '', source_url: '', kind: 'result' }]);
+          setAdded((a) => [...a, `p${n}`]);
         }}>Add proof</button>
-      </div>
+      </Section>
 
-      <div className="card">
-        <h2>Voice</h2>
+      <Section title="Voice" meta={`${count(pb.voice.tone, 'tone rule')} · ${count(pb.banned, 'banned phrase')}`}>
         {T({ label: 'Tone rules', hint: 'One per line', rows: 4, value: lines(pb.voice.tone), onChange: (v) => set(['voice', 'tone'], unlines(v)) })}
         {T({ label: 'Words and phrases that fit', hint: 'One per line', rows: 3, value: lines(pb.voice.use), onChange: (v) => set(['voice', 'use'], unlines(v)) })}
         {T({ label: 'Never use', hint: 'One per line. Em dashes are always removed.', rows: 5, value: lines(pb.banned), onChange: (v) => set(['banned'], unlines(v)) })}
-      </div>
+      </Section>
 
-      <div className="card">
-        <div className="card-head"><h2>Examples you like</h2><span className="muted small">These steer the style most. Separate examples with a line of ---</span></div>
+      <Section title="Examples and templates" meta={[count(pb.examples.posts, 'post'), count(pb.examples.connection_notes, 'connection note'), count(pb.examples.dms, 'DM'), count(pb.examples.comments, 'comment')].join(' · ')}>
+        <p className="muted small">These steer the style most. Separate examples with a line of ---</p>
         {T({ label: 'Comments', rows: 5, value: blocks(pb.examples.comments), onChange: (v) => set(['examples', 'comments'], unblocks(v)) })}
         {T({ label: 'Connection notes', rows: 4, value: blocks(pb.examples.connection_notes), onChange: (v) => set(['examples', 'connection_notes'], unblocks(v)) })}
         {T({ label: 'First DMs', rows: 6, value: blocks(pb.examples.dms), onChange: (v) => set(['examples', 'dms'], unblocks(v)) })}
         {T({ label: 'Posts', rows: 6, value: blocks(pb.examples.posts), onChange: (v) => set(['examples', 'posts'], unblocks(v)) })}
-      </div>
+      </Section>
 
-      <div className="card">
-        <h2>Rules</h2>
+      <Section title="Rules" meta={`${pb.rules.connection_note_max}-character connection notes · ${count(pb.rules.extra, 'rule')}`}>
         <div className="grid2">
           <label className="field"><span className="field-label">Connection note limit (characters)</span>
             <input type="number" min={100} max={300} value={pb.rules.connection_note_max} onChange={(e) => set(['rules', 'connection_note_max'], Number(e.target.value))} /></label>
           <label className="field"><span className="field-label">What the first DM offers</span><input value={pb.rules.dm_offer} onChange={(e) => set(['rules', 'dm_offer'], e.target.value)} /></label>
         </div>
         {T({ label: 'Other rules', hint: 'One per line', rows: 4, value: lines(pb.rules.extra), onChange: (v) => set(['rules', 'extra'], unlines(v)) })}
-      </div>
+      </Section>
 
       <div className="savebar">
         {!code && <input className="code" value={code} onChange={(e) => setCode(e.target.value)} type="password" placeholder="Access code" aria-label="Access code" />}

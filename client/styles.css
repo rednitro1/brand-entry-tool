@@ -397,3 +397,27 @@ a.ev:hover { border-color: var(--green); color: var(--green-ink); }
 .case-note { margin: 0; font-size: 12px; color: var(--warn); }
 .case-link { margin-top: auto; font-size: 12.5px; }
 .case-company { font-size: 13.5px; color: var(--ink-2); margin: 12px 0 6px; }
+
+/* playbook dropdowns */
+.section { padding: 0; }
+.section > summary { list-style: none; cursor: pointer; display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; padding: 18px 24px; }
+.section > summary::-webkit-details-marker { display: none; }
+.section > summary h2 { margin: 0; }
+.section > summary h2::before { content: '▸'; font-family: var(--sans); font-size: 14px; color: var(--muted); margin-right: 10px; display: inline-block; transition: transform .15s; }
+.section[open] > summary h2::before { transform: rotate(90deg); }
+.section > summary:hover h2::before { color: var(--green); }
+.section-body { padding: 0 24px 20px; }
+.proof { padding: 0; }
+.proof > summary { list-style: none; cursor: pointer; display: grid; grid-template-columns: auto auto minmax(0, 1fr); align-items: baseline; gap: 4px 10px; padding: 10px 12px; }
+.proof > summary::-webkit-details-marker { display: none; }
+.proof > summary strong { font-size: 13.5px; white-space: nowrap; }
+.proof-claim { font-size: 13px; color: var(--ink-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.proof[open] > summary { border-bottom: 1px solid var(--line); margin-bottom: 10px; }
+.proof[open] > summary .proof-claim { white-space: normal; }
+.proof > :not(summary) { margin-left: 12px; margin-right: 12px; }
+@media (max-width: 640px) {
+  .section > summary, .section-body { padding-left: 16px; padding-right: 16px; }
+  .proof > summary { grid-template-columns: auto minmax(0, 1fr); }
+  .proof > summary .proof-claim { grid-column: 1 / -1; }
+}
+.proof > summary .kind { justify-self: start; }
