@@ -1,0 +1,1108 @@
+{
+ "person": {
+  "id": "60ed4dad0c9382000153d773",
+  "first_name": "Kira",
+  "last_name": "Lazzarini",
+  "name": "Kira Lazzarini",
+  "linkedin_url": "http://www.linkedin.com/in/kira-lazzarini",
+  "title": "Director of Social Media, Influencer, and Collegiate Marketing",
+  "twitter_url": null,
+  "github_url": null,
+  "facebook_url": null,
+  "extrapolated_email_confidence": null,
+  "headline": "Director of Social Media, Influencer, and Collegiate Marketing",
+  "organization_id": "5cc89431f30fd609e4d41862",
+  "match_confidence": "high",
+  "employment_history": [
+   {
+    "_id": "6aff2e1fa9ddfa0001eb1e44",
+    "created_at": null,
+    "current": true,
+    "degree": null,
+    "description": null,
+    "emails": null,
+    "end_date": null,
+    "grade_level": null,
+    "kind": null,
+    "major": null,
+    "org_matched_by_name": false,
+    "organization_id": "5cc89431f30fd609e4d41862",
+    "organization_name": "Alani Nutrition",
+    "raw_address": null,
+    "start_date": "2025-10-01",
+    "title": "Director of Social Media, Influencer, and Collegiate Marketing",
+    "updated_at": null,
+    "id": "6aff2e1fa9ddfa0001eb1e44",
+    "key": "6aff2e1fa9ddfa0001eb1e44"
+   },
+   {
+    "_id": "6aff2e1fa9ddfa0001eb1e45",
+    "created_at": null,
+    "current": true,
+    "degree": null,
+    "description": null,
+    "emails": null,
+    "end_date": null,
+    "grade_level": null,
+    "kind": null,
+    "major": null,
+    "org_matched_by_name": false,
+    "organization_id": "5cc89431f30fd609e4d41862",
+    "organization_name": "Alani Nutrition",
+    "raw_address": null,
+    "start_date": "2025-01-01",
+    "title": "Social & Influencer Marketing Manager",
+    "updated_at": null,
+    "id": "6aff2e1fa9ddfa0001eb1e45",
+    "key": "6aff2e1fa9ddfa0001eb1e45"
+   },
+   {
+    "_id": "6aff2e1fa9ddfa0001eb1e46",
+    "created_at": null,
+    "current": true,
+    "degree": null,
+    "description": null,
+    "emails": null,
+    "end_date": null,
+    "grade_level": null,
+    "kind": null,
+    "major": null,
+    "org_matched_by_name": false,
+    "organization_id": "5f6a3e1662d28e00c6ca0835",
+    "organization_name": "CELSIUS",
+    "raw_address": null,
+    "start_date": "2025-10-01",
+    "title": "Director of Social Media, Influencer, and Collegiate Marketing - Alani Nu",
+    "updated_at": null,
+    "id": "6aff2e1fa9ddfa0001eb1e46",
+    "key": "6aff2e1fa9ddfa0001eb1e46"
+   },
+   {
+    "_id": "6aff2e1fa9ddfa0001eb1e47",
+    "created_at": null,
+    "current": true,
+    "degree": null,
+    "description": null,
+    "emails": null,
+    "end_date": null,
+    "grade_level": null,
+    "kind": null,
+    "major": null,
+    "org_matched_by_name": false,
+    "organization_id": "5f6a3e1662d28e00c6ca0835",
+    "organization_name": "CELSIUS",
+    "raw_address": null,
+    "start_date": "2025-04-01",
+    "title": "Social & Influencer Marketing Manager - Alani Nu",
+    "updated_at": null,
+    "id": "6aff2e1fa9ddfa0001eb1e47",
+    "key": "6aff2e1fa9ddfa0001eb1e47"
+   },
+   {
+    "_id": "6aff2e1fa9ddfa0001eb1e48",
+    "created_at": null,
+    "current": false,
+    "degree": null,
+    "description": null,
+    "emails": null,
+    "end_date": "2025-01-01",
+    "grade_level": null,
+    "kind": null,
+    "major": null,
+    "org_matched_by_name": false,
+    "organization_id": "5cc89431f30fd609e4d41862",
+    "organization_name": "Alani Nutrition",
+    "raw_address": null,
+    "start_date": "2023-12-01",
+    "title": "Social & Influencer Marketing Strategist",
+    "updated_at": null,
+    "id": "6aff2e1fa9ddfa0001eb1e48",
+    "key": "6aff2e1fa9ddfa0001eb1e48"
+   },
+   {
+    "_id": "6aff2e1fa9ddfa0001eb1e49",
+    "created_at": null,
+    "current": false,
+    "degree": null,
+    "description": null,
+    "emails": null,
+    "end_date": "2023-12-01",
+    "grade_level": null,
+    "kind": null,
+    "major": null,
+    "org_matched_by_name": false,
+    "organization_id": "5cc89431f30fd609e4d41862",
+    "organization_name": "Alani Nutrition",
+    "raw_address": null,
+    "start_date": "2022-06-01",
+    "title": "Influencer Marketing Specialist",
+    "updated_at": null,
+    "id": "6aff2e1fa9ddfa0001eb1e49",
+    "key": "6aff2e1fa9ddfa0001eb1e49"
+   },
+   {
+    "_id": "6aff2e1fa9ddfa0001eb1e4a",
+    "created_at": null,
+    "current": false,
+    "degree": null,
+    "description": null,
+    "emails": null,
+    "end_date": "2022-06-01",
+    "grade_level": null,
+    "kind": null,
+    "major": null,
+    "org_matched_by_name": false,
+    "organization_id": "5cc89431f30fd609e4d41862",
+    "organization_name": "Alani Nutrition",
+    "raw_address": null,
+    "start_date": "2021-06-01",
+    "title": "Marketing Coordinator",
+    "updated_at": null,
+    "id": "6aff2e1fa9ddfa0001eb1e4a",
+    "key": "6aff2e1fa9ddfa0001eb1e4a"
+   },
+   {
+    "_id": "6aff2e1fa9ddfa0001eb1e4b",
+    "created_at": null,
+    "current": false,
+    "degree": null,
+    "description": null,
+    "emails": null,
+    "end_date": "2021-06-01",
+    "grade_level": null,
+    "kind": null,
+    "major": null,
+    "org_matched_by_name": false,
+    "organization_id": "5cc89431f30fd609e4d41862",
+    "organization_name": "Alani Nutrition",
+    "raw_address": null,
+    "start_date": "2021-03-01",
+    "title": "Community Marketing Intern",
+    "updated_at": null,
+    "id": "6aff2e1fa9ddfa0001eb1e4b",
+    "key": "6aff2e1fa9ddfa0001eb1e4b"
+   },
+   {
+    "_id": "6aff2e1fa9ddfa0001eb1e4c",
+    "created_at": null,
+    "current": false,
+    "degree": null,
+    "description": null,
+    "emails": null,
+    "end_date": "2021-06-01",
+    "grade_level": null,
+    "kind": null,
+    "major": null,
+    "org_matched_by_name": false,
+    "organization_id": "54a1218a69702d94a403bf02",
+    "organization_name": "Procter & Gamble",
+    "raw_address": null,
+    "start_date": "2021-02-01",
+    "title": "Product Content Creator",
+    "updated_at": null,
+    "id": "6aff2e1fa9ddfa0001eb1e4c",
+    "key": "6aff2e1fa9ddfa0001eb1e4c"
+   },
+   {
+    "_id": "6aff2e1fa9ddfa0001eb1e4d",
+    "created_at": null,
+    "current": false,
+    "degree": null,
+    "description": null,
+    "emails": null,
+    "end_date": "2021-05-01",
+    "grade_level": null,
+    "kind": null,
+    "major": null,
+    "org_matched_by_name": false,
+    "organization_id": "5ed0d873f18ec00001289a7a",
+    "organization_name": "Congo Brands",
+    "raw_address": null,
+    "start_date": "2020-12-01",
+    "title": "Customer Service Representative",
+    "updated_at": null,
+    "id": "6aff2e1fa9ddfa0001eb1e4d",
+    "key": "6aff2e1fa9ddfa0001eb1e4d"
+   },
+   {
+    "_id": "6aff2e1fa9ddfa0001eb1e4e",
+    "created_at": null,
+    "current": false,
+    "degree": null,
+    "description": null,
+    "emails": null,
+    "end_date": "2020-08-01",
+    "grade_level": null,
+    "kind": null,
+    "major": null,
+    "org_matched_by_name": false,
+    "organization_id": "5eb49664112aa70098f4e069",
+    "organization_name": "Learning Enterprises",
+    "raw_address": null,
+    "start_date": "2020-06-01",
+    "title": "English Second Language Teacher",
+    "updated_at": null,
+    "id": "6aff2e1fa9ddfa0001eb1e4e",
+    "key": "6aff2e1fa9ddfa0001eb1e4e"
+   },
+   {
+    "_id": "6aff2e1fa9ddfa0001eb1e4f",
+    "created_at": null,
+    "current": false,
+    "degree": null,
+    "description": null,
+    "emails": null,
+    "end_date": "2020-04-01",
+    "grade_level": null,
+    "kind": null,
+    "major": null,
+    "org_matched_by_name": false,
+    "organization_id": "556d1fb6736964122fb49c00",
+    "organization_name": "UCSB Housing, Dining, & Auxiliary Enterprises",
+    "raw_address": null,
+    "start_date": "2019-10-01",
+    "title": "Student Employee",
+    "updated_at": null,
+    "id": "6aff2e1fa9ddfa0001eb1e4f",
+    "key": "6aff2e1fa9ddfa0001eb1e4f"
+   },
+   {
+    "_id": "6aff2e1fa9ddfa0001eb1e50",
+    "created_at": null,
+    "current": false,
+    "degree": null,
+    "description": null,
+    "emails": null,
+    "end_date": "2019-06-01",
+    "grade_level": null,
+    "kind": null,
+    "major": null,
+    "org_matched_by_name": false,
+    "organization_id": "6546160a742e5200016efcbd",
+    "organization_name": "UCSB Children's Center",
+    "raw_address": null,
+    "start_date": "2019-03-01",
+    "title": "UCSB Children's Center TA",
+    "updated_at": null,
+    "id": "6aff2e1fa9ddfa0001eb1e50",
+    "key": "6aff2e1fa9ddfa0001eb1e50"
+   }
+  ],
+  "formatted_address": "Los Angeles, CA, USA",
+  "time_zone": "America/Los_Angeles",
+  "email_status": "verified",
+  "directory_url": null,
+  "organization": {
+   "id": "5cc89431f30fd609e4d41862",
+   "name": "Alani Nutrition",
+   "website_url": "http://www.alaninu.com",
+   "angellist_url": null,
+   "linkedin_url": "http://www.linkedin.com/company/alani-nutrition",
+   "twitter_url": "https://twitter.com/alaninutrition",
+   "facebook_url": "https://facebook.com/alaninutrition",
+   "languages": [],
+   "alexa_ranking": 590827,
+   "phone": "+1 352-350-1210",
+   "linkedin_uid": "18878941",
+   "founded_year": 2018,
+   "publicly_traded_symbol": null,
+   "publicly_traded_exchange": null,
+   "logo_url": "https://zenprospect-production.s3.amazonaws.com/uploads/pictures/6a9d39b670bf51000106d973/picture",
+   "crunchbase_url": null,
+   "primary_domain": "alaninu.com",
+   "sic_codes": [
+    "2099",
+    "2086"
+   ],
+   "naics_codes": [
+    "312111",
+    "311999"
+   ],
+   "primary_phone": {
+    "number": "+1 352-350-1210",
+    "sanitized_number": "+13523501210"
+   },
+   "sanitized_phone": "+13523501210",
+   "industry": "health, wellness & fitness",
+   "estimated_num_employees": 680,
+   "keywords": [
+    "wellness & fitness services",
+    "energy drinks",
+    "sports nutrition",
+    "ready-to-drink beverages",
+    "pre-workout",
+    "dietary supplements",
+    "social media campaigns",
+    "wellness goals",
+    "flavor partnerships",
+    "protein shakes",
+    "wellness community",
+    "targeted marketing to women",
+    "product innovation",
+    "targeted marketing",
+    "functional beverage innovation",
+    "international retail expansion",
+    "functional beverages",
+    "brand identity",
+    "youthful branding",
+    "fitness support",
+    "online sales",
+    "product diversification",
+    "formulation",
+    "product quality assurance",
+    "international distribution",
+    "market research",
+    "product quality",
+    "female-centric marketing",
+    "customer trust",
+    "made in usa",
+    "flavor development",
+    "product development",
+    "social media marketing",
+    "international expansion",
+    "active lifestyle products",
+    "health and fitness",
+    "flavor innovation",
+    "wellness products",
+    "approachable wellness",
+    "health and wellness",
+    "wellness",
+    "e-commerce",
+    "d2c",
+    "snacks",
+    "active lifestyle support",
+    "brand loyalty programs",
+    "active lifestyles",
+    "customer engagement tools",
+    "empowerment",
+    "female-focused",
+    "digital marketing",
+    "b2c",
+    "female health",
+    "brand community building",
+    "young women",
+    "health-conscious snacking",
+    "nutrition",
+    "nutritional supplements",
+    "trust and transparency",
+    "soft drink and ice manufacturing",
+    "product manufacturing",
+    "online retail",
+    "product packaging",
+    "supplements",
+    "customer communication",
+    "pre-workout supplements",
+    "retail",
+    "protein supplements",
+    "food and beverage",
+    "customer support",
+    "retail distribution",
+    "brand loyalty",
+    "quality assurance",
+    "product portfolio",
+    "distribution channels",
+    "active women",
+    "consumer goods",
+    "brand marketing",
+    "female sports nutrition",
+    "supply chain",
+    "growth strategy",
+    "wellness empowerment",
+    "customer engagement",
+    "market expansion",
+    "retail sales",
+    "vibrant flavor profiles",
+    "retail partnerships",
+    "international markets",
+    "growth and expansion",
+    "trust in manufacturing",
+    "premium health supplements",
+    "market growth",
+    "fitness products",
+    "protein bars",
+    "fitness essentials",
+    "healthy snacks",
+    "rewards program",
+    "ambassador program",
+    "flavorful drinks",
+    "protein shake",
+    "vegan options",
+    "collagen supplements",
+    "multi-vitamins",
+    "gummy vitamins",
+    "fat burners",
+    "super greens",
+    "energy sticks",
+    "convenient supplements",
+    "natural ingredients",
+    "workout recovery",
+    "meal replacement",
+    "snack bundles",
+    "gift cards",
+    "fitness bundles",
+    "delicious flavors",
+    "impactful formulas",
+    "high protein snacks",
+    "snack alternatives",
+    "shipping policy",
+    "return policy",
+    "recipe ideas",
+    "healthy recipes",
+    "community engagement",
+    "consumer trust",
+    "health-conscious",
+    "easy online shopping",
+    "strategic partnerships",
+    "supportive environment",
+    "active lifestyle",
+    "motivation",
+    "performance enhancement",
+    "taste satisfaction",
+    "functional nutrition",
+    "bcaa supplements",
+    "manufacturing",
+    "distribution",
+    "consumer products & retail",
+    "health, wellness & fitness",
+    "marketing",
+    "marketing & advertising",
+    "consumer internet",
+    "consumers",
+    "internet",
+    "information technology & services",
+    "food & beverages",
+    "enterprise software",
+    "enterprises",
+    "computer software",
+    "b2b",
+    "mechanical or industrial engineering"
+   ],
+   "organization_revenue_printed": "1B",
+   "organization_revenue": 1001900000.0,
+   "industries": [
+    "health, wellness & fitness",
+    "food & beverages",
+    "consumer goods"
+   ],
+   "secondary_industries": [
+    "food & beverages",
+    "consumer goods"
+   ],
+   "snippets_loaded": true,
+   "industry_tag_id": "5567cddb7369644d250c0000",
+   "industry_tag_hash": {
+    "health, wellness & fitness": "5567cddb7369644d250c0000",
+    "food & beverages": "5567ce1e7369643b806a0000",
+    "consumer goods": "5567ce987369643b789e0000"
+   },
+   "retail_location_count": 0,
+   "raw_address": "2381 NW Executive Center Dr, Boca Raton, Florida 33431, US",
+   "street_address": "2381 NW Executive Center Dr",
+   "city": "Boca Raton",
+   "state": "Florida",
+   "postal_code": "33431-8560",
+   "country": "United States",
+   "owned_by_organization_id": "5f6a3e1662d28e00c6ca0835",
+   "owned_by_organization": {
+    "id": "5f6a3e1662d28e00c6ca0835",
+    "name": "CELSIUS",
+    "website_url": "http://www.celsiusholdingsinc.com"
+   },
+   "short_description": "Alani Nutrition, also known as Alani Nu, is a wellness and fitness brand founded in 2018 by Katy Hearn and Haydn Schneider. The company is headquartered in Boca Raton, Florida, following its acquisition by Celsius Holdings in 2025. Alani Nu is recognized as the fourth largest energy drink brand in the United States, primarily targeting female consumers aged 18 to 24 with its sugar-free, low-calorie energy beverages.\n\nThe brand offers a diverse range of health and fitness products, including ready-to-drink energy drinks, pre-workout supplements, protein bars, dietary supplements, and lifestyle apparel. Alani Nu emphasizes fun flavors and functional nutrition, aiming to support active lifestyles and holistic wellness. Its products are available through major national retailers and online platforms, ensuring broad accessibility for health-conscious consumers.",
+   "total_funding": 1275000000,
+   "total_funding_printed": "1.3B",
+   "latest_funding_round_date": "2025-02-01T00:00:00.000+00:00",
+   "latest_funding_stage": "Merger / Acquisition",
+   "latest_funding_detected_at": "2026-01-13T08:50:20.990Z",
+   "funding_events": [
+    {
+     "id": "6966074c1cf1c2000186a672",
+     "date": "2025-02-01T00:00:00.000+00:00",
+     "news_url": "https://www.businesswire.com/news/home/20250220357704/en/Celsius-Holdings-to-Acquire-Alani-Nu%C2%AE-Creating-a-Leading-Better-For-You-Functional-Lifestyle-Platform/",
+     "detected_at": "2026-01-13T08:50:20.990Z",
+     "type": "Merger / Acquisition",
+     "investors": "Celsius",
+     "amount": "1.3B",
+     "currency": "$"
+    }
+   ],
+   "suborganizations": [],
+   "num_suborganizations": 0,
+   "annual_revenue_printed": "1B",
+   "annual_revenue": 1001900000.0,
+   "technology_names": [
+    "<model-viewer>",
+    "AWS Cloud",
+    "Afterpay",
+    "Amadesa",
+    "Amazon AWS",
+    "Amazon Route 53",
+    "Apache",
+    "Apache HTTP Server",
+    "Apple Business Manager",
+    "Apple Pay",
+    "Apple School Manager",
+    "Bing",
+    "Bing Webmaster Tools",
+    "Black Crow",
+    "Bootstrap",
+    "CSS",
+    "Cart Functionality",
+    "CloudFlare",
+    "Cloudflare Rocket Loader",
+    "EWWW Image Optimizer",
+    "Element UI",
+    "Facebook Pixel",
+    "Font Awesome",
+    "Genesis",
+    "GoDaddy Domains",
+    "GoDaddy Hosting",
+    "Google Font API",
+    "Google Hosted Libraries",
+    "Google Maps",
+    "Google Search Console",
+    "Google Search Console",
+    "Google Tag Manager",
+    "Gorgias",
+    "HREF Lang",
+    "HSTS",
+    "HTML",
+    "HTTP/3",
+    "JavaScript",
+    "Klaviyo",
+    "KnowBe4",
+    "Loop Returns",
+    "Mailgun",
+    "Mailshake",
+    "Max Mega Menu",
+    "Microsoft 365",
+    "Microsoft 365 Apps & Services",
+    "Microsoft Email Providers",
+    "Microsoft Exchange",
+    "Microsoft Exchange Online",
+    "Microsoft Office",
+    "Microsoft Windows",
+    "Mobile Friendly",
+    "Multilingual",
+    "MySQL",
+    "OneTrust",
+    "Open Graph",
+    "Outlook",
+    "PHP",
+    "Popper",
+    "Priority Hints",
+    "RSS",
+    "Rebuy",
+    "Salesforce",
+    "Salesforce Platform",
+    "Salesforce Sales Cloud",
+    "Sendgrid",
+    "Shopify",
+    "Shopify Custom",
+    "Shopify Developer Platform",
+    "Shoplift",
+    "Three.js",
+    "Twilio SendGrid Email API",
+    "Twilio SendGrid Email Marketing Campaigns",
+    "UserWay",
+    "Viewport Meta",
+    "VueJS",
+    "WP Rocket",
+    "Windows Server",
+    "WordPress Multisite",
+    "WordPress.org",
+    "Wordpress",
+    "Wunderkind",
+    "Yoast",
+    "Yoast SEO",
+    "Yotpo",
+    "Yotpo Reviews",
+    "YouTube",
+    "jQuery",
+    "jQuery Migrate",
+    "reCAPTCHA"
+   ],
+   "current_technologies": [
+    {
+     "uid": "<model-viewer>",
+     "name": "<model-viewer>",
+     "category": "CSS and JavaScript Libraries"
+    },
+    {
+     "uid": "aws_cloud",
+     "name": "AWS Cloud",
+     "category": "Cloud Services"
+    },
+    {
+     "uid": "afterpay",
+     "name": "Afterpay",
+     "category": "Payments"
+    },
+    {
+     "uid": "amadesa",
+     "name": "Amadesa",
+     "category": "Online Testing Platforms"
+    },
+    {
+     "uid": "amazon_aws",
+     "name": "Amazon AWS",
+     "category": "Cloud Services"
+    },
+    {
+     "uid": "amazon_route_53",
+     "name": "Amazon Route 53",
+     "category": "Domain Name Services"
+    },
+    {
+     "uid": "apache",
+     "name": "Apache",
+     "category": "Web and Application Servers"
+    },
+    {
+     "uid": "apache_http_server",
+     "name": "Apache HTTP Server",
+     "category": "Web and Application Servers"
+    },
+    {
+     "uid": "apple_business_manager",
+     "name": "Apple Business Manager",
+     "category": "Enterprise Mobility Management"
+    },
+    {
+     "uid": "apple_pay",
+     "name": "Apple Pay",
+     "category": "Payments"
+    },
+    {
+     "uid": "apple_school_manager",
+     "name": "Apple School Manager",
+     "category": "Enterprise Mobility Management"
+    },
+    {
+     "uid": "bing",
+     "name": "Bing",
+     "category": "Search Appliances"
+    },
+    {
+     "uid": "bing_webmaster_tools",
+     "name": "Bing Webmaster Tools",
+     "category": "Search Marketing"
+    },
+    {
+     "uid": "black_crow",
+     "name": "Black Crow",
+     "category": "Data Management Platform"
+    },
+    {
+     "uid": "bootstrap",
+     "name": "Bootstrap",
+     "category": "CSS and JavaScript Libraries"
+    },
+    {
+     "uid": "css",
+     "name": "CSS",
+     "category": "Frameworks and Programming Languages"
+    },
+    {
+     "uid": "cart_functionality",
+     "name": "Cart Functionality",
+     "category": "E-commerce Platforms"
+    },
+    {
+     "uid": "cloudflare",
+     "name": "CloudFlare",
+     "category": "Content Delivery Networks"
+    },
+    {
+     "uid": "cloudflare_rocket_loader",
+     "name": "Cloudflare Rocket Loader",
+     "category": "Web Accelerators"
+    },
+    {
+     "uid": "ewww_image_optimizer",
+     "name": "EWWW Image Optimizer",
+     "category": "Web Accelerators"
+    },
+    {
+     "uid": "element_ui",
+     "name": "Element UI",
+     "category": "CSS and JavaScript Libraries"
+    },
+    {
+     "uid": "facebook_pixel",
+     "name": "Facebook Pixel",
+     "category": "Analytics and Tracking"
+    },
+    {
+     "uid": "font_awesome",
+     "name": "Font Awesome",
+     "category": "Fonts"
+    },
+    {
+     "uid": "genesis",
+     "name": "Genesis",
+     "category": "CMS"
+    },
+    {
+     "uid": "godaddy_domains",
+     "name": "GoDaddy Domains",
+     "category": "Domain Name Services"
+    },
+    {
+     "uid": "godaddy_hosting",
+     "name": "GoDaddy Hosting",
+     "category": "Hosting"
+    },
+    {
+     "uid": "google_font_api",
+     "name": "Google Font API",
+     "category": "Fonts"
+    },
+    {
+     "uid": "google_hosted_libraries",
+     "name": "Google Hosted Libraries",
+     "category": "Content Delivery Networks"
+    },
+    {
+     "uid": "google_maps",
+     "name": "Google Maps",
+     "category": "Surveying and Geospatial"
+    },
+    {
+     "uid": "google_search_console",
+     "name": "Google Search Console",
+     "category": "Search Marketing"
+    },
+    {
+     "uid": "google_search_console",
+     "name": "Google Search Console",
+     "category": "Search Marketing"
+    },
+    {
+     "uid": "google_tag_manager",
+     "name": "Google Tag Manager",
+     "category": "Tag Management"
+    },
+    {
+     "uid": "gorgias",
+     "name": "Gorgias",
+     "category": "Support and Feedback"
+    },
+    {
+     "uid": "href_lang",
+     "name": "HREF Lang",
+     "category": "Search Marketing"
+    },
+    {
+     "uid": "hsts",
+     "name": "HSTS",
+     "category": "Security"
+    },
+    {
+     "uid": "html",
+     "name": "HTML",
+     "category": "Frameworks and Programming Languages"
+    },
+    {
+     "uid": "http/3",
+     "name": "HTTP/3",
+     "category": "Network Protocols and Standards"
+    },
+    {
+     "uid": "javascript",
+     "name": "JavaScript",
+     "category": "Frameworks and Programming Languages"
+    },
+    {
+     "uid": "klaviyo",
+     "name": "Klaviyo",
+     "category": "Email Marketing"
+    },
+    {
+     "uid": "knowbe4",
+     "name": "KnowBe4",
+     "category": "Security"
+    },
+    {
+     "uid": "loop_returns",
+     "name": "Loop Returns",
+     "category": "E-commerce Tools"
+    },
+    {
+     "uid": "mailgun",
+     "name": "Mailgun",
+     "category": "Email Delivery"
+    },
+    {
+     "uid": "mailshake",
+     "name": "Mailshake",
+     "category": "Marketing Automation"
+    },
+    {
+     "uid": "max_mega_menu",
+     "name": "Max Mega Menu",
+     "category": "CSS and JavaScript Libraries"
+    },
+    {
+     "uid": "microsoft_365",
+     "name": "Microsoft 365",
+     "category": "Communication and Collaboration"
+    },
+    {
+     "uid": "microsoft_365_apps_services",
+     "name": "Microsoft 365 Apps & Services",
+     "category": "Communication and Collaboration"
+    },
+    {
+     "uid": "microsoft_email_providers",
+     "name": "Microsoft Email Providers",
+     "category": "Email Providers"
+    },
+    {
+     "uid": "microsoft_exchange",
+     "name": "Microsoft Exchange",
+     "category": "Email Providers"
+    },
+    {
+     "uid": "microsoft_exchange_online",
+     "name": "Microsoft Exchange Online",
+     "category": "Email Providers"
+    },
+    {
+     "uid": "microsoft_office",
+     "name": "Microsoft Office",
+     "category": "Communication and Collaboration"
+    },
+    {
+     "uid": "microsoft_windows",
+     "name": "Microsoft Windows",
+     "category": "Operating Systems"
+    },
+    {
+     "uid": "mobile_friendly",
+     "name": "Mobile Friendly",
+     "category": "Other"
+    },
+    {
+     "uid": "multilingual",
+     "name": "Multilingual",
+     "category": "Localization and Translation"
+    },
+    {
+     "uid": "mysql",
+     "name": "MySQL",
+     "category": "Database"
+    },
+    {
+     "uid": "onetrust",
+     "name": "OneTrust",
+     "category": "Consent and Privacy Management"
+    },
+    {
+     "uid": "open_graph",
+     "name": "Open Graph",
+     "category": "Social Sharing"
+    },
+    {
+     "uid": "outlook",
+     "name": "Outlook",
+     "category": "Email Providers"
+    },
+    {
+     "uid": "php",
+     "name": "PHP",
+     "category": "Frameworks and Programming Languages"
+    },
+    {
+     "uid": "popper",
+     "name": "Popper",
+     "category": "CSS and JavaScript Libraries"
+    },
+    {
+     "uid": "priority_hints",
+     "name": "Priority Hints",
+     "category": "Web Accelerators"
+    },
+    {
+     "uid": "rss",
+     "name": "RSS",
+     "category": "Content Syndication Networks"
+    },
+    {
+     "uid": "rebuy",
+     "name": "Rebuy",
+     "category": "Personalization"
+    },
+    {
+     "uid": "salesforce",
+     "name": "Salesforce",
+     "category": "Customer Relationship Management"
+    },
+    {
+     "uid": "salesforce_platform",
+     "name": "Salesforce Platform",
+     "category": "Cloud Services"
+    },
+    {
+     "uid": "salesforce_sales_cloud",
+     "name": "Salesforce Sales Cloud",
+     "category": "Customer Relationship Management"
+    },
+    {
+     "uid": "sendgrid",
+     "name": "Sendgrid",
+     "category": "Email Delivery"
+    },
+    {
+     "uid": "shopify",
+     "name": "Shopify",
+     "category": "E-commerce Platforms"
+    },
+    {
+     "uid": "shopify_custom",
+     "name": "Shopify Custom",
+     "category": "E-commerce Platforms"
+    },
+    {
+     "uid": "shopify_developer_platform",
+     "name": "Shopify Developer Platform",
+     "category": "E-commerce Platforms"
+    },
+    {
+     "uid": "shoplift",
+     "name": "Shoplift",
+     "category": "Online Testing Platforms"
+    },
+    {
+     "uid": "threejs",
+     "name": "Three.js",
+     "category": "CSS and JavaScript Libraries"
+    },
+    {
+     "uid": "twilio_sendgrid_email_api",
+     "name": "Twilio SendGrid Email API",
+     "category": "Email Delivery"
+    },
+    {
+     "uid": "twilio_sendgrid_email_marketing_campaigns",
+     "name": "Twilio SendGrid Email Marketing Campaigns",
+     "category": "Email Marketing"
+    },
+    {
+     "uid": "userway",
+     "name": "UserWay",
+     "category": "Widgets"
+    },
+    {
+     "uid": "viewport_meta",
+     "name": "Viewport Meta",
+     "category": "Frameworks and Programming Languages"
+    },
+    {
+     "uid": "vue_js_library",
+     "name": "VueJS",
+     "category": "CSS and JavaScript Libraries"
+    },
+    {
+     "uid": "wp_rocket",
+     "name": "WP Rocket",
+     "category": "Web Accelerators"
+    },
+    {
+     "uid": "windows_server",
+     "name": "Windows Server",
+     "category": "Operating Systems"
+    },
+    {
+     "uid": "wordpress_multisite",
+     "name": "WordPress Multisite",
+     "category": "CMS"
+    },
+    {
+     "uid": "wordpress_org",
+     "name": "WordPress.org",
+     "category": "CMS"
+    },
+    {
+     "uid": "wordpress",
+     "name": "Wordpress",
+     "category": "CMS"
+    },
+    {
+     "uid": "wunderkind",
+     "name": "Wunderkind",
+     "category": "Personalization"
+    },
+    {
+     "uid": "yoast",
+     "name": "Yoast",
+     "category": "Search Marketing"
+    },
+    {
+     "uid": "yoast_seo",
+     "name": "Yoast SEO",
+     "category": "Search Marketing"
+    },
+    {
+     "uid": "yotpo",
+     "name": "Yotpo",
+     "category": "Customer Reviews"
+    },
+    {
+     "uid": "yotpo_reviews",
+     "name": "Yotpo Reviews",
+     "category": "Customer Reviews"
+    },
+    {
+     "uid": "youtube",
+     "name": "YouTube",
+     "category": "Online Video Platforms"
+    },
+    {
+     "uid": "jquery",
+     "name": "jQuery",
+     "category": "CSS and JavaScript Libraries"
+    },
+    {
+     "uid": "jquery_migrate",
+     "name": "jQuery Migrate",
+     "category": "CSS and JavaScript Libraries"
+    },
+    {
+     "uid": "recaptcha",
+     "name": "reCAPTCHA",
+     "category": "Captcha"
+    }
+   ],
+   "org_chart_root_people_ids": [],
+   "org_chart_sector": null,
+   "org_chart_removed": null,
+   "org_chart_show_department_filter": null,
+   "is_placeholder_organization": null,
+   "organization_headcount_six_month_growth": 0.07586206896551724,
+   "organization_headcount_twelve_month_growth": 0.0297029702970297,
+   "organization_headcount_twenty_four_month_growth": -0.006369426751592357
+  },
+  "departments": [
+   "master_marketing"
+  ],
+  "subdepartments": [
+   "advertising",
+   "marketing",
+   "social_media_marketing"
+  ],
+  "seniority": "director",
+  "functions": [
+   "marketing",
+   "media_and_commmunication"
+  ],
+  "intent_strength": null,
+  "show_intent": false,
+  "email_domain_catchall": true,
+  "email_domain_catchall_verdict": "allow",
+  "result": "Matched",
+  "revealed_for_current_team": true
+ },
+ "request_id": -1688907388351689130,
+ "request_id_str": "-1688907388351689130"
+}

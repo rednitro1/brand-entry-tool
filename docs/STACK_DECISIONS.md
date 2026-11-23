@@ -8,7 +8,7 @@ Running log, appended as the tool is built. The final write-up is distilled from
 - **Run state is persisted (`runs`, `run_modules`), not kept in memory.** A restart can't lose a run in flight, the UI streams per-module status by polling, and cost/duration per run is queryable. This fixes a gap from the reference app, which kept jobs in memory.
 
 ## Enrichment (people)
-Chosen: **Apollo people search → Prospeo fallback** to find wedge-persona people, then **Firecrawl `people_company_enrich`** for title/tenure and **Alexandria `harvestapi linkedin/profile-posts` / `scrapecreators linkedin/post`** for their public LinkedIn posts.
+Chosen: **Apollo first, Prospeo fallback** to find wedge-persona people (Ben's own keys, called directly). Apollo's match record also carries title and employment history, so tenure comes from Apollo and no separate enrichment provider is needed. Public LinkedIn posts come from **Firecrawl's Alexandria `harvestapi linkedin/profile-posts`**, read only.
 
 Alternatives considered (to be filled with real numbers as I test):
 1. Clay
@@ -41,3 +41,13 @@ Alternatives considered (to be filled with real numbers as I test):
 - **A title change can show up on LinkedIn before any press.** Fink's "Chief Marketing Officer at Alani Nu" appears only in her LinkedIn headline, while every press release still says Chief Creative Officer. Titles come from the profile, and the conflict is shown.
 - **Receipts check:** every claim must cite a page the tool fetched and quote it verbatim. Of 25 claims in the last run, 25 passed; the fixture tests cover hallucinated quotes, unfetched URLs and missing URLs.
 - **Cost per profile:** about $0.40 (Firecrawl ~36 credits, Claude Opus 5.5 ~48k in / 9k out), 66 to 131 seconds.
+
+### Stakeholders (live calls, 2026-11-22)
+- **Apollo search is free but blind.** It returns obfuscated last names and no LinkedIn URL. The tool runs two free searches (brand domain, then brand name across all companies), classifies titles, and spends a match credit only on wedge personas, capped at 6 per run. This is the "qualify before paid enrichment" rule from my recruiting pipelines.
+- **People get filed under the parent.** "Customer Support Manager - Alani Nu" sits under CELSIUS in Apollo, so the brand-name search exists to catch them.
+- **Apollo employment history duplicates roles across brand and parent.** Kira's current title appears under both "Alani Nutrition" and "CELSIUS ... - Alani Nu". Tenure uses the earliest matching start: in role since 2025-10, at the company since 2021-03 (intern). That matches the manual research ("at the brand since 2021").
+- **Timezone bug caught by a fixture:** `new Date('2025-10-01')` is Sept 30 in US time zones, so month math uses UTC. The tests also run under `TZ=UTC`, which matches Railway.
+- **Neither Apollo nor Prospeo has the Alani Nu CMO.** JoBeth Fink's "Chief Marketing Officer at Alani Nu" appears only in her public LinkedIn headline. Apollo has no record of her, and Prospeo's domain + seniority search returned one unrelated creative director. The tool reports this as a gap ("No CMO found in Apollo or Prospeo") instead of filling it from memory.
+- **Prospeo exact-title filters return NO_RESULTS** unless titles match its taxonomy, so the fallback filters on domain + seniority (C-Suite/VP/Director) and classifies titles locally. NO_RESULTS is free; Prospeo rate-limits quickly, so the client waits and retries.
+- **LinkedIn posts: reposts are not flagged.** 5 of Kira's 9 feed items are John Fieldly's or Celsius's posts. They're detected by the author slug in the post URL, and only her own posts count toward her pattern. All three receipt posts from the manual research came back, at 1 Firecrawl credit per profile (the contract says 4).
+- **Kira's pattern, computed:** 4 own posts (2 promotions, 2 team or speaking), 0 tactics, latest own post is the Mar 2026 PepsiCo HQ talk. This matches the manual read that she rarely posts tactics.

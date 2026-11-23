@@ -1,0 +1,812 @@
+{
+ "success": true,
+ "scrape_id": "01a20627-8523-76e4-8a36-01108f70d669",
+ "data": {
+  "alexandria": [
+   {
+    "provider": "harvestapi",
+    "capability": "linkedin/profile-posts",
+    "creditsCost": 1,
+    "data": {
+     "pagination": {
+      "totalElements": 0,
+      "totalPages": 0,
+      "pageNumber": 1,
+      "previousElements": 0,
+      "pageSize": 50,
+      "paginationToken": "dXJuOmxpOmFjdGl2aXR5OjY4MTQ5MTA5NTE5MzA5MDg2NzItMTYyNDgwMTM4NTg0OA=="
+     },
+     "elements": [
+      {
+       "id": "7439491961046122496",
+       "linkedinUrl": "https://www.linkedin.com/posts/kira-lazzarini_womenshistorymonth-activity-7439491961046122496-uhQl",
+       "content": "Earlier this month I had the opportunity to speak at PepsiCo HQ for their #Womenshistorymonth kickoff alongside Elaine San Jose & Kyle Watson. \n\nI am incredibly grateful to have been included in this conversation and to share more about my career journey and experiences at Alani Nutrition. It is surreal to think back on the immense growth we have seen as a brand, and that I have experienced, both personally and professionally, in this role over the last 5 years. \n\nThis opportunity reminded me that we aren't just building a community around the brand, but are also building a bold community within it. \n\nA big thank you to the Women\u2019s ERGs at PepsiCo for having us!",
+       "contentAttributes": [
+        {
+         "start": 53,
+         "length": 7,
+         "type": "COMPANY_NAME",
+         "hyperlink": "https://www.linkedin.com/company/1431/",
+         "textLink": null,
+         "company": {
+          "id": "1431",
+          "name": "PepsiCo",
+          "linkedinUrl": "https://www.linkedin.com/company/1431/"
+         }
+        },
+        {
+         "start": 112,
+         "length": 15,
+         "type": "PROFILE_MENTION",
+         "hyperlink": "https://www.linkedin.com/in/ACoAAAsGby4BC8GgkjUK7GoSXguxO0rTHypRbUI",
+         "textLink": null,
+         "profile": {
+          "id": "ACoAAAsGby4BC8GgkjUK7GoSXguxO0rTHypRbUI",
+          "firstName": "Elaine",
+          "lastName": "San Jose",
+          "linkedinUrl": "https://www.linkedin.com/in/ACoAAAsGby4BC8GgkjUK7GoSXguxO0rTHypRbUI",
+          "publicIdentifier": null
+         }
+        },
+        {
+         "start": 130,
+         "length": 11,
+         "type": "PROFILE_MENTION",
+         "hyperlink": "https://www.linkedin.com/in/ACoAAAGcSfMBafyYr_8UjstRydfycMBou6sA6DE",
+         "textLink": null,
+         "profile": {
+          "id": "ACoAAAGcSfMBafyYr_8UjstRydfycMBou6sA6DE",
+          "firstName": "Kyle",
+          "lastName": "Watson",
+          "linkedinUrl": "https://www.linkedin.com/in/ACoAAAGcSfMBafyYr_8UjstRydfycMBou6sA6DE",
+          "publicIdentifier": null
+         }
+        },
+        {
+         "start": 274,
+         "length": 15,
+         "type": "COMPANY_NAME",
+         "hyperlink": "https://www.linkedin.com/company/18878941/",
+         "textLink": null,
+         "company": {
+          "id": "18878941",
+          "name": "Alani Nutrition",
+          "linkedinUrl": "https://www.linkedin.com/company/18878941/"
+         }
+        }
+       ],
+       "author": {
+        "id": "ACoAAC1S-twBaPZH16Nl1pqqkvmu68XU14aECfY",
+        "universalName": null,
+        "publicIdentifier": "kira-lazzarini",
+        "type": "profile",
+        "name": "Kira Lazzarini",
+        "linkedinUrl": "https://www.linkedin.com/in/kira-lazzarini?miniProfileUrn=urn%3Ali%3Afsd_profile%3AACoAAC1S-twBaPZH16Nl1pqqkvmu68XU14aECfY",
+        "info": "Director of Social Media, Influencer, and Collegiate Marketing",
+        "website": null,
+        "websiteLabel": null,
+        "avatar": {
+         "url": "https://media.licdn.com/dms/image/v2/D5603AQHeuzhUfkp3fw/profile-displayphoto-crop_800_800/B56ZnGHSc4JsAI-/0/1759965423856?e=1796860800&v=beta&t=SO8yNQJeGKahX29Z3ATCgK9E62LLo1_7WsVW5Rh0ilk",
+         "width": 800,
+         "height": 800
+        },
+        "urn": "760412892",
+        "profileId": "ACoAAC1S-twBaPZH16Nl1pqqkvmu68XU14aECfY"
+       },
+       "postedAt": {
+        "timestamp": 1773713102590,
+        "date": "2026-03-17T02:05:02.590Z",
+        "postedAgoShort": "8mo",
+        "postedAgoText": "8 months ago \u2022 Visible to anyone on or off LinkedIn"
+       },
+       "entityId": "7439491961046122496",
+       "shareUrn": "urn:li:ugcPost:7439491959821529088",
+       "shareLinkedinUrl": "https://www.linkedin.com/feed/update/urn:li:ugcPost:7439491959821529088",
+       "engagement": {
+        "id": "7439491959821529088",
+        "likes": 477,
+        "comments": 13,
+        "shares": 3,
+        "reactions": [
+         {
+          "type": "LIKE",
+          "count": 400
+         },
+         {
+          "type": "EMPATHY",
+          "count": 39
+         },
+         {
+          "type": "PRAISE",
+          "count": 37
+         },
+         {
+          "type": "APPRECIATION",
+          "count": 1
+         }
+        ]
+       }
+      },
+      {
+       "id": "7438290909248520192",
+       "linkedinUrl": "https://www.linkedin.com/posts/john-fieldly_alaninu-limeslush-ugcPost-7438233773332238336-FeZi",
+       "content": "Fort Lauderdale Spring Break + Alani Nu Lime Slush = a winning combination! \n\nYesterday our team launched the \u201cSlush Stop\u201d activation at Fort Lauderdale Beach, giving thousands of Spring Breakers their first taste of our latest limited-time flavor.\n\nThe creativity and execution from our team is truly inspiring \u2014 from the immersive setup to the energy on the ground.\n\nSeeing consumers experience the brand in real life like this is what makes activations like these so meaningful. Momentum like this reinforces why we\u2019re so excited about what\u2019s ahead for Alani Nutrition.\n\nHead to Las Olas Beach in Fort Lauderdale - today only - and check it out! hashtag #AlaniNu #LimeSlush",
+       "contentAttributes": [
+        {
+         "start": 556,
+         "length": 15,
+         "type": "COMPANY_NAME",
+         "hyperlink": "https://www.linkedin.com/company/18878941/",
+         "textLink": null,
+         "company": {
+          "id": "18878941",
+          "name": "Alani Nutrition",
+          "linkedinUrl": "https://www.linkedin.com/company/18878941/"
+         }
+        }
+       ],
+       "author": {
+        "id": "ACoAAAE27iIBrxFjJZu8r67I3R3PxGYGyRwo-lk",
+        "universalName": null,
+        "publicIdentifier": "john-fieldly",
+        "type": "profile",
+        "name": "John Fieldly",
+        "linkedinUrl": "https://www.linkedin.com/in/john-fieldly?miniProfileUrn=urn%3Ali%3Afsd_profile%3AACoAAAE27iIBrxFjJZu8r67I3R3PxGYGyRwo-lk",
+        "info": "CEO @ CELSIUS, Inc",
+        "website": null,
+        "websiteLabel": null,
+        "avatar": null,
+        "urn": "20377122",
+        "profileId": "ACoAAAE27iIBrxFjJZu8r67I3R3PxGYGyRwo-lk"
+       },
+       "postedAt": {
+        "timestamp": 1773426749527,
+        "date": "2026-03-13T18:32:29.527Z",
+        "postedAgoShort": "8mo",
+        "postedAgoText": "8 months ago \u2022 Visible to anyone on or off LinkedIn"
+       },
+       "repostedBy": {
+        "name": "Kira Lazzarini",
+        "publicIdentifier": "kira-lazzarini",
+        "universalName": null,
+        "linkedinUrl": "https://www.linkedin.com/in/kira-lazzarini?miniProfileUrn=urn%3Ali%3Afsd_profile%3AACoAAC1S-twBaPZH16Nl1pqqkvmu68XU14aECfY"
+       },
+       "repostedAt": {
+        "timestamp": 1773426749527,
+        "date": "2026-03-13T18:32:29.527Z"
+       },
+       "entityId": "7438290909248520192",
+       "shareUrn": "urn:li:ugcPost:7438233773332238336",
+       "shareLinkedinUrl": "https://www.linkedin.com/feed/update/urn:li:ugcPost:7438233773332238336",
+       "engagement": {
+        "id": "7438233773332238336",
+        "likes": 1255,
+        "comments": 59,
+        "shares": 44,
+        "reactions": [
+         {
+          "type": "LIKE",
+          "count": 1042
+         },
+         {
+          "type": "EMPATHY",
+          "count": 104
+         },
+         {
+          "type": "PRAISE",
+          "count": 103
+         },
+         {
+          "type": "APPRECIATION",
+          "count": 6
+         }
+        ]
+       }
+      },
+      {
+       "id": "7405806528940761089",
+       "linkedinUrl": "https://www.linkedin.com/posts/celsius-inc-_alaninu-bevnet-energydrink-activity-7405280113694773248-Lew0",
+       "content": "We\u2019re proud to share that Alani Nu has been named BevNET\u2019s 2025 Brand of the Year - a standout recognition from a highly respected industry voice.\n\nThis honor reflects the brand\u2019s strong connection with consumers, its disciplined approach to innovation, and the momentum the team has built throughout 2025. It\u2019s a meaningful acknowledgment of the creativity, focus, and execution behind the brand\u2019s continued growth.\n\nA heartfelt thank you to our teams, customers, and partners whose commitment and collaboration make achievements like this possible.\n\n#AlaniNu #BevNET #EnergyDrink",
+       "contentAttributes": [],
+       "author": {
+        "id": "2471716",
+        "universalName": "celsius-inc-",
+        "publicIdentifier": null,
+        "type": "company",
+        "name": "CELSIUS",
+        "linkedinUrl": "https://www.linkedin.com/company/celsius-inc-/posts",
+        "info": "229,267 followers",
+        "website": null,
+        "websiteLabel": null,
+        "avatar": {
+         "url": "https://media.licdn.com/dms/image/v2/D4E0BAQEhvrkflTEViw/company-logo_400_400/B4EZ0_3ziVHAAY-/0/1774893087161/celsius_inc__logo?e=1796860800&v=beta&t=v67DAHsaCVK5FfPNZgxChZi3Pa9KU-oHwJaLzcCSjy0",
+         "width": 400,
+         "height": 400
+        },
+        "urn": "2471716",
+        "companyId": "2471716"
+       },
+       "postedAt": {
+        "timestamp": 1765681869731,
+        "date": "2025-12-14T03:11:09.731Z",
+        "postedAgoShort": "11mo",
+        "postedAgoText": "11 months ago \u2022 Visible to anyone on or off LinkedIn"
+       },
+       "repostedBy": {
+        "name": "Kira Lazzarini",
+        "publicIdentifier": "kira-lazzarini",
+        "universalName": null,
+        "linkedinUrl": "https://www.linkedin.com/in/kira-lazzarini?miniProfileUrn=urn%3Ali%3Afsd_profile%3AACoAAC1S-twBaPZH16Nl1pqqkvmu68XU14aECfY"
+       },
+       "repostedAt": {
+        "timestamp": 1765681869731,
+        "date": "2025-12-14T03:11:09.731Z"
+       },
+       "entityId": "7405806528940761089",
+       "shareUrn": "urn:li:share:7405280112000073728",
+       "shareLinkedinUrl": "https://www.linkedin.com/feed/update/urn:li:share:7405280112000073728",
+       "engagement": {
+        "id": "7405280113694773248",
+        "likes": 754,
+        "comments": 13,
+        "shares": 78,
+        "reactions": [
+         {
+          "type": "LIKE",
+          "count": 630
+         },
+         {
+          "type": "PRAISE",
+          "count": 69
+         },
+         {
+          "type": "EMPATHY",
+          "count": 50
+         },
+         {
+          "type": "APPRECIATION",
+          "count": 3
+         },
+         {
+          "type": "ENTERTAINMENT",
+          "count": 1
+         },
+         {
+          "type": "INTEREST",
+          "count": 1
+         }
+        ]
+       }
+      },
+      {
+       "id": "7381828264761364480",
+       "linkedinUrl": "https://www.linkedin.com/posts/kira-lazzarini_i-am-excited-to-share-my-recent-promotion-activity-7381828264761364480-Lra0",
+       "content": "I am excited to share my recent promotion to Director of Social Media, Influencer, and Collegiate Marketing for Alani Nutrition at CELSIUS!\n\nI am incredibly proud of the growth and success we have achieved as a brand over the past few years and I am even more excited for what lies ahead. I am deeply grateful for the opportunity to take on new challenges, grow alongside an incredible group of people, and contribute to a brand that I truly love. \n\nA huge thank you to JoBeth Fink and Matthew Sabia, as well as the entire Alani Nu & Celsius team, for their continued support. Here\u2019s to the next chapter!",
+       "contentAttributes": [
+        {
+         "start": 112,
+         "length": 15,
+         "type": "COMPANY_NAME",
+         "hyperlink": "https://www.linkedin.com/company/18878941/",
+         "textLink": null,
+         "company": {
+          "id": "18878941",
+          "name": "Alani Nutrition",
+          "linkedinUrl": "https://www.linkedin.com/company/18878941/"
+         }
+        },
+        {
+         "start": 131,
+         "length": 7,
+         "type": "COMPANY_NAME",
+         "hyperlink": "https://www.linkedin.com/company/2471716/",
+         "textLink": null,
+         "company": {
+          "id": "2471716",
+          "name": "CELSIUS",
+          "linkedinUrl": "https://www.linkedin.com/company/2471716/"
+         }
+        },
+        {
+         "start": 470,
+         "length": 11,
+         "type": "PROFILE_MENTION",
+         "hyperlink": "https://www.linkedin.com/in/ACoAAAHYgHIBRx1-T6JqXNiCqh1lQN11pt2J2EU",
+         "textLink": null,
+         "profile": {
+          "id": "ACoAAAHYgHIBRx1-T6JqXNiCqh1lQN11pt2J2EU",
+          "firstName": "JoBeth",
+          "lastName": "Fink",
+          "linkedinUrl": "https://www.linkedin.com/in/ACoAAAHYgHIBRx1-T6JqXNiCqh1lQN11pt2J2EU",
+          "publicIdentifier": null
+         }
+        },
+        {
+         "start": 486,
+         "length": 13,
+         "type": "PROFILE_MENTION",
+         "hyperlink": "https://www.linkedin.com/in/ACoAAAYsOtAB-MvibdVgPfd79dRmSTKTIiMijs4",
+         "textLink": null,
+         "profile": {
+          "id": "ACoAAAYsOtAB-MvibdVgPfd79dRmSTKTIiMijs4",
+          "firstName": "Matthew",
+          "lastName": "Sabia",
+          "linkedinUrl": "https://www.linkedin.com/in/ACoAAAYsOtAB-MvibdVgPfd79dRmSTKTIiMijs4",
+          "publicIdentifier": null
+         }
+        }
+       ],
+       "author": {
+        "id": "ACoAAC1S-twBaPZH16Nl1pqqkvmu68XU14aECfY",
+        "universalName": null,
+        "publicIdentifier": "kira-lazzarini",
+        "type": "profile",
+        "name": "Kira Lazzarini",
+        "linkedinUrl": "https://www.linkedin.com/in/kira-lazzarini?miniProfileUrn=urn%3Ali%3Afsd_profile%3AACoAAC1S-twBaPZH16Nl1pqqkvmu68XU14aECfY",
+        "info": "Director of Social Media, Influencer, and Collegiate Marketing",
+        "website": null,
+        "websiteLabel": null,
+        "avatar": {
+         "url": "https://media.licdn.com/dms/image/v2/D5603AQHeuzhUfkp3fw/profile-displayphoto-crop_800_800/B56ZnGHSc4JsAI-/0/1759965423856?e=1796860800&v=beta&t=SO8yNQJeGKahX29Z3ATCgK9E62LLo1_7WsVW5Rh0ilk",
+         "width": 800,
+         "height": 800
+        },
+        "urn": "760412892",
+        "profileId": "ACoAAC1S-twBaPZH16Nl1pqqkvmu68XU14aECfY"
+       },
+       "postedAt": {
+        "timestamp": 1759965006056,
+        "date": "2025-10-08T23:10:06.056Z",
+        "postedAgoShort": "1yr",
+        "postedAgoText": "1 year ago \u2022 Visible to anyone on or off LinkedIn"
+       },
+       "entityId": "7381828264761364480",
+       "shareUrn": "urn:li:share:7381828263914070017",
+       "shareLinkedinUrl": "https://www.linkedin.com/feed/update/urn:li:share:7381828263914070017",
+       "engagement": {
+        "id": "7381828264761364480",
+        "likes": 110,
+        "comments": 39,
+        "shares": 0,
+        "reactions": [
+         {
+          "type": "LIKE",
+          "count": 52
+         },
+         {
+          "type": "PRAISE",
+          "count": 33
+         },
+         {
+          "type": "EMPATHY",
+          "count": 24
+         },
+         {
+          "type": "APPRECIATION",
+          "count": 1
+         }
+        ]
+       }
+      },
+      {
+       "id": "7359601907247534081",
+       "linkedinUrl": "https://www.linkedin.com/posts/celsius-inc-_celsius-holdings-is-thrilled-to-report-record-activity-7359324539626876929-lYwa",
+       "content": "Celsius Holdings is thrilled to report record revenue and strong financial results today for the second quarter 2025, primarily driven by the newly acquired Alani Nu brand as well as channel mix, increased distribution and velocity gains for the CELSIUS brand. Increasing consumer demand for zero sugar, functional beverages helped propel the Celsius Holdings portfolio to a 17.3% dollar share in U.S. tracked channels for the Q2 period. \u26a1\n\u00a0\nHats off to our retail customers, distributors, consumers and Team Celsius for your passion and commitment to our brands!\u00a0\n\u00a0\nRead more: https://lnkd.in/eeFfGGHv",
+       "contentAttributes": [
+        {
+         "start": 578,
+         "length": 24,
+         "type": "TEXT_LINK",
+         "hyperlink": null,
+         "textLink": "https://lnkd.in/eeFfGGHv"
+        }
+       ],
+       "author": {
+        "id": "2471716",
+        "universalName": "celsius-inc-",
+        "publicIdentifier": null,
+        "type": "company",
+        "name": "CELSIUS",
+        "linkedinUrl": "https://www.linkedin.com/company/celsius-inc-/posts",
+        "info": "229,267 followers",
+        "website": null,
+        "websiteLabel": null,
+        "avatar": {
+         "url": "https://media.licdn.com/dms/image/v2/D4E0BAQEhvrkflTEViw/company-logo_400_400/B4EZ0_3ziVHAAY-/0/1774893087161/celsius_inc__logo?e=1796860800&v=beta&t=v67DAHsaCVK5FfPNZgxChZi3Pa9KU-oHwJaLzcCSjy0",
+         "width": 400,
+         "height": 400
+        },
+        "urn": "2471716",
+        "companyId": "2471716"
+       },
+       "postedAt": {
+        "timestamp": 1754665829479,
+        "date": "2025-08-08T15:10:29.479Z",
+        "postedAgoShort": "1yr",
+        "postedAgoText": "1 year ago \u2022 Visible to anyone on or off LinkedIn"
+       },
+       "repostedBy": {
+        "name": "Kira Lazzarini",
+        "publicIdentifier": "kira-lazzarini",
+        "universalName": null,
+        "linkedinUrl": "https://www.linkedin.com/in/kira-lazzarini?miniProfileUrn=urn%3Ali%3Afsd_profile%3AACoAAC1S-twBaPZH16Nl1pqqkvmu68XU14aECfY"
+       },
+       "repostedAt": {
+        "timestamp": 1754665829479,
+        "date": "2025-08-08T15:10:29.479Z"
+       },
+       "entityId": "7359601907247534081",
+       "shareUrn": "urn:li:share:7359324538536427521",
+       "shareLinkedinUrl": "https://www.linkedin.com/feed/update/urn:li:share:7359324538536427521",
+       "engagement": {
+        "id": "7359324539626876929",
+        "likes": 1233,
+        "comments": 40,
+        "shares": 89,
+        "reactions": [
+         {
+          "type": "LIKE",
+          "count": 1084
+         },
+         {
+          "type": "PRAISE",
+          "count": 104
+         },
+         {
+          "type": "EMPATHY",
+          "count": 40
+         },
+         {
+          "type": "APPRECIATION",
+          "count": 2
+         },
+         {
+          "type": "INTEREST",
+          "count": 2
+         },
+         {
+          "type": "ENTERTAINMENT",
+          "count": 1
+         }
+        ]
+       }
+      },
+      {
+       "id": "7332885546114961409",
+       "linkedinUrl": "https://www.linkedin.com/posts/celsius-inc-_alaninu-celsius-livefit-activity-7322633267541667840-28N5",
+       "content": "Big milestone alert! \ud83d\ude80\n\nWe\u2019re thrilled to share that Alani Nutrition has officially surpassed $1 billion in yearly retail sales, growing 72% year-over-year! \ud83c\udf89\n\nThis incredible achievement reflects the brand\u2019s strong consumer connection and amazing products.\n\nAs part of the Celsius family, we\u2019re excited to keep building on this momentum and reaching even more people with great-tasting, functional beverages.\n\nCongrats to the entire Alani Nu team! \ud83d\ude4c\n\n#AlaniNu #Celsius #LiveFit",
+       "contentAttributes": [
+        {
+         "start": 53,
+         "length": 15,
+         "type": "COMPANY_NAME",
+         "hyperlink": "https://www.linkedin.com/company/18878941/",
+         "textLink": null,
+         "company": {
+          "id": "18878941",
+          "name": "Alani Nutrition",
+          "linkedinUrl": "https://www.linkedin.com/company/18878941/"
+         }
+        }
+       ],
+       "author": {
+        "id": "2471716",
+        "universalName": "celsius-inc-",
+        "publicIdentifier": null,
+        "type": "company",
+        "name": "CELSIUS",
+        "linkedinUrl": "https://www.linkedin.com/company/celsius-inc-/posts",
+        "info": "229,267 followers",
+        "website": null,
+        "websiteLabel": null,
+        "avatar": {
+         "url": "https://media.licdn.com/dms/image/v2/D4E0BAQEhvrkflTEViw/company-logo_400_400/B4EZ0_3ziVHAAY-/0/1774893087161/celsius_inc__logo?e=1796860800&v=beta&t=v67DAHsaCVK5FfPNZgxChZi3Pa9KU-oHwJaLzcCSjy0",
+         "width": 400,
+         "height": 400
+        },
+        "urn": "2471716",
+        "companyId": "2471716"
+       },
+       "postedAt": {
+        "timestamp": 1748296152619,
+        "date": "2025-05-26T21:49:12.619Z",
+        "postedAgoShort": "1yr",
+        "postedAgoText": "1 year ago \u2022 Visible to anyone on or off LinkedIn"
+       },
+       "repostedBy": {
+        "name": "Kira Lazzarini",
+        "publicIdentifier": "kira-lazzarini",
+        "universalName": null,
+        "linkedinUrl": "https://www.linkedin.com/in/kira-lazzarini?miniProfileUrn=urn%3Ali%3Afsd_profile%3AACoAAC1S-twBaPZH16Nl1pqqkvmu68XU14aECfY"
+       },
+       "repostedAt": {
+        "timestamp": 1748296152619,
+        "date": "2025-05-26T21:49:12.619Z"
+       },
+       "entityId": "7332885546114961409",
+       "shareUrn": "urn:li:share:7322633266417569792",
+       "shareLinkedinUrl": "https://www.linkedin.com/feed/update/urn:li:share:7322633266417569792",
+       "engagement": {
+        "id": "7322633267541667840",
+        "likes": 1247,
+        "comments": 50,
+        "shares": 101,
+        "reactions": [
+         {
+          "type": "LIKE",
+          "count": 1027
+         },
+         {
+          "type": "PRAISE",
+          "count": 145
+         },
+         {
+          "type": "EMPATHY",
+          "count": 68
+         },
+         {
+          "type": "APPRECIATION",
+          "count": 7
+         }
+        ]
+       }
+      },
+      {
+       "id": "7320966565120671744",
+       "linkedinUrl": "https://www.linkedin.com/posts/john-fieldly_oneteam-celsius-alaninu-activity-7320888084491874304-rvu6",
+       "content": "A few days ago, the CELSIUS Executive Leadership Team and I traveled to Louisville to meet our newest teammates from Alani Nutrition, who are now officially part of the Celsius family. I truly appreciated their warm welcome and the chance to hear their perspective on the brand's story and strengths. Most of all, the energy in the room was electric\u2014full of shared excitement for what\u2019s ahead. The journey together starts now,\u00a0and momentum is already building!\n\n#OneTeam #CELSIUS #AlaniNu #StrongerTogether #Leadership #Growth",
+       "contentAttributes": [
+        {
+         "start": 20,
+         "length": 7,
+         "type": "COMPANY_NAME",
+         "hyperlink": "https://www.linkedin.com/company/2471716/",
+         "textLink": null,
+         "company": {
+          "id": "2471716",
+          "name": "CELSIUS",
+          "linkedinUrl": "https://www.linkedin.com/company/2471716/"
+         }
+        },
+        {
+         "start": 117,
+         "length": 15,
+         "type": "COMPANY_NAME",
+         "hyperlink": "https://www.linkedin.com/company/18878941/",
+         "textLink": null,
+         "company": {
+          "id": "18878941",
+          "name": "Alani Nutrition",
+          "linkedinUrl": "https://www.linkedin.com/company/18878941/"
+         }
+        }
+       ],
+       "author": {
+        "id": "ACoAAAE27iIBrxFjJZu8r67I3R3PxGYGyRwo-lk",
+        "universalName": null,
+        "publicIdentifier": "john-fieldly",
+        "type": "profile",
+        "name": "John Fieldly",
+        "linkedinUrl": "https://www.linkedin.com/in/john-fieldly?miniProfileUrn=urn%3Ali%3Afsd_profile%3AACoAAAE27iIBrxFjJZu8r67I3R3PxGYGyRwo-lk",
+        "info": "CEO @ CELSIUS, Inc",
+        "website": null,
+        "websiteLabel": null,
+        "avatar": null,
+        "urn": "20377122",
+        "profileId": "ACoAAAE27iIBrxFjJZu8r67I3R3PxGYGyRwo-lk"
+       },
+       "postedAt": {
+        "timestamp": 1745454446106,
+        "date": "2025-04-24T00:27:26.106Z",
+        "postedAgoShort": "1yr",
+        "postedAgoText": "1 year ago \u2022 Visible to anyone on or off LinkedIn"
+       },
+       "repostedBy": {
+        "name": "Kira Lazzarini",
+        "publicIdentifier": "kira-lazzarini",
+        "universalName": null,
+        "linkedinUrl": "https://www.linkedin.com/in/kira-lazzarini?miniProfileUrn=urn%3Ali%3Afsd_profile%3AACoAAC1S-twBaPZH16Nl1pqqkvmu68XU14aECfY"
+       },
+       "repostedAt": {
+        "timestamp": 1745454446106,
+        "date": "2025-04-24T00:27:26.106Z"
+       },
+       "entityId": "7320966565120671744",
+       "shareUrn": "urn:li:share:7320888082180829185",
+       "shareLinkedinUrl": "https://www.linkedin.com/feed/update/urn:li:share:7320888082180829185",
+       "engagement": {
+        "id": "7320888084491874304",
+        "likes": 1489,
+        "comments": 60,
+        "shares": 28,
+        "reactions": [
+         {
+          "type": "LIKE",
+          "count": 1327
+         },
+         {
+          "type": "PRAISE",
+          "count": 95
+         },
+         {
+          "type": "EMPATHY",
+          "count": 63
+         },
+         {
+          "type": "APPRECIATION",
+          "count": 2
+         },
+         {
+          "type": "ENTERTAINMENT",
+          "count": 1
+         },
+         {
+          "type": "INTEREST",
+          "count": 1
+         }
+        ]
+       }
+      },
+      {
+       "id": "7286154482583842817",
+       "linkedinUrl": "https://www.linkedin.com/posts/kira-lazzarini_i-am-thrilled-to-announce-my-promotion-to-activity-7286154482583842817-d6cZ",
+       "content": "I am thrilled to announce my promotion to Social & Influencer Manager at Congo Brands! \ud83c\udf89\n\nIt has been an incredible 4 year journey, from starting out as an intern to becoming a manager, and I am beyond lucky to to work with such a remarkable team. I am immensely grateful for the opportunities and experiences I have had so far, and am excited to see what is to come in 2025! \n\nHuge thanks to Brittany Jacobs, Matt Zucco, and the rest of my amazing team for their continued support each and every day!",
+       "contentAttributes": [
+        {
+         "start": 73,
+         "length": 12,
+         "type": "COMPANY_NAME",
+         "hyperlink": "https://www.linkedin.com/company/65457024/",
+         "textLink": null,
+         "company": {
+          "id": "65457024",
+          "name": "Congo Brands",
+          "linkedinUrl": "https://www.linkedin.com/company/65457024/"
+         }
+        },
+        {
+         "start": 393,
+         "length": 15,
+         "type": "PROFILE_MENTION",
+         "hyperlink": "https://www.linkedin.com/in/ACoAACCaIkUB92LO4xqppSHXgWIHb50FFEqA_gM",
+         "textLink": null,
+         "profile": {
+          "id": "ACoAACCaIkUB92LO4xqppSHXgWIHb50FFEqA_gM",
+          "firstName": "Brittany",
+          "lastName": "Jacobs",
+          "linkedinUrl": "https://www.linkedin.com/in/ACoAACCaIkUB92LO4xqppSHXgWIHb50FFEqA_gM",
+          "publicIdentifier": null
+         }
+        },
+        {
+         "start": 410,
+         "length": 10,
+         "type": "PROFILE_MENTION",
+         "hyperlink": "https://www.linkedin.com/in/ACoAAApWc8wBJx72Y1h6FmWpItMLJzo3WjNqiuw",
+         "textLink": null,
+         "profile": {
+          "id": "ACoAAApWc8wBJx72Y1h6FmWpItMLJzo3WjNqiuw",
+          "firstName": "Matt",
+          "lastName": "Zucco",
+          "linkedinUrl": "https://www.linkedin.com/in/ACoAAApWc8wBJx72Y1h6FmWpItMLJzo3WjNqiuw",
+          "publicIdentifier": null
+         }
+        }
+       ],
+       "author": {
+        "id": "ACoAAC1S-twBaPZH16Nl1pqqkvmu68XU14aECfY",
+        "universalName": null,
+        "publicIdentifier": "kira-lazzarini",
+        "type": "profile",
+        "name": "Kira Lazzarini",
+        "linkedinUrl": "https://www.linkedin.com/in/kira-lazzarini?miniProfileUrn=urn%3Ali%3Afsd_profile%3AACoAAC1S-twBaPZH16Nl1pqqkvmu68XU14aECfY",
+        "info": "Director of Social Media, Influencer, and Collegiate Marketing",
+        "website": null,
+        "websiteLabel": null,
+        "avatar": {
+         "url": "https://media.licdn.com/dms/image/v2/D5603AQHeuzhUfkp3fw/profile-displayphoto-crop_800_800/B56ZnGHSc4JsAI-/0/1759965423856?e=1796860800&v=beta&t=SO8yNQJeGKahX29Z3ATCgK9E62LLo1_7WsVW5Rh0ilk",
+         "width": 800,
+         "height": 800
+        },
+        "urn": "760412892",
+        "profileId": "ACoAAC1S-twBaPZH16Nl1pqqkvmu68XU14aECfY"
+       },
+       "postedAt": {
+        "timestamp": 1737154598852,
+        "date": "2025-01-17T22:56:38.852Z",
+        "postedAgoShort": "1yr",
+        "postedAgoText": "1 year ago \u2022 Visible to anyone on or off LinkedIn"
+       },
+       "entityId": "7286154482583842817",
+       "shareUrn": "urn:li:share:7286154481816256512",
+       "shareLinkedinUrl": "https://www.linkedin.com/feed/update/urn:li:share:7286154481816256512",
+       "engagement": {
+        "id": "7286154482583842817",
+        "likes": 60,
+        "comments": 27,
+        "shares": 0,
+        "reactions": [
+         {
+          "type": "LIKE",
+          "count": 34
+         },
+         {
+          "type": "PRAISE",
+          "count": 14
+         },
+         {
+          "type": "EMPATHY",
+          "count": 12
+         }
+        ]
+       }
+      },
+      {
+       "id": "6814910951930908672",
+       "linkedinUrl": "https://www.linkedin.com/posts/kira-lazzarini_i-am-so-excited-to-announce-that-this-past-activity-6814910951930908672-8Qeg",
+       "content": "I am so excited to announce that this past June I graduated from UCSB with a B.A. in Global Studies, minor in Anthropology, and certificate in Global Business and Marketing. During my 3 years at UCSB I had research published in the URCA journal, completed LTC training through the Adventure Program, and was able to travel to Thailand for a summer to teach English. I am so grateful for all the friends I\u2019ve made, experiences I have had in beautiful Santa Barbara, and for all of the lessons I have learned both in and out of the classroom!",
+       "contentAttributes": [],
+       "author": {
+        "id": "ACoAAC1S-twBaPZH16Nl1pqqkvmu68XU14aECfY",
+        "universalName": null,
+        "publicIdentifier": "kira-lazzarini",
+        "type": "profile",
+        "name": "Kira Lazzarini",
+        "linkedinUrl": "https://www.linkedin.com/in/kira-lazzarini?miniProfileUrn=urn%3Ali%3Afsd_profile%3AACoAAC1S-twBaPZH16Nl1pqqkvmu68XU14aECfY",
+        "info": "Director of Social Media, Influencer, and Collegiate Marketing",
+        "website": null,
+        "websiteLabel": null,
+        "avatar": {
+         "url": "https://media.licdn.com/dms/image/v2/D5603AQHeuzhUfkp3fw/profile-displayphoto-crop_800_800/B56ZnGHSc4JsAI-/0/1759965423856?e=1796860800&v=beta&t=SO8yNQJeGKahX29Z3ATCgK9E62LLo1_7WsVW5Rh0ilk",
+         "width": 800,
+         "height": 800
+        },
+        "urn": "760412892",
+        "profileId": "ACoAAC1S-twBaPZH16Nl1pqqkvmu68XU14aECfY"
+       },
+       "postedAt": {
+        "timestamp": 1624801385863,
+        "date": "2021-06-27T13:43:05.863Z",
+        "postedAgoShort": "5yr",
+        "postedAgoText": "5 years ago \u2022 Edited \u2022 Visible to anyone on or off LinkedIn"
+       },
+       "entityId": "6814910951930908672",
+       "shareUrn": "urn:li:share:6814910951079456768",
+       "shareLinkedinUrl": "https://www.linkedin.com/feed/update/urn:li:share:6814910951079456768",
+       "engagement": {
+        "id": "6814910951930908672",
+        "likes": 4,
+        "comments": 1,
+        "shares": 0,
+        "reactions": [
+         {
+          "type": "LIKE",
+          "count": 4
+         }
+        ]
+       }
+      }
+     ],
+     "query": {
+      "profile": "https://www.linkedin.com/in/kira-lazzarini/",
+      "companyIds": [],
+      "profileIds": [
+       "ACoAAC1S-twBaPZH16Nl1pqqkvmu68XU14aECfY"
+      ],
+      "authorsCompanyIds": []
+     },
+     "status": 200,
+     "retries": 0,
+     "originalQuery": {
+      "profile": "https://www.linkedin.com/in/kira-lazzarini/"
+     },
+     "entityId": "7439491961046122496,7438290909248520192,7405806528940761089,7381828264761364480,7359601907247534081,7332885546114961409,7320966565120671744,7286154482583842817,6814910951930908672",
+     "requestId": "dc1d3fce-21a3-4c54-a8ff-3c6971d062cf"
+    },
+    "records": 9,
+    "upstreamStatus": 200
+   }
+  ],
+  "creditsCost": 1
+ }
+}

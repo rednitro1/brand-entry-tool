@@ -77,6 +77,16 @@ export function makeFirecrawl(apiKey, {
         publishedAt: json.data?.metadata?.publishedTime || json.data?.metadata?.['article:published_time'] || null,
       };
     },
+    /* Runs one Alexandria provider capability through /v2/scrape. Recorded shape:
+       fixtures/recorded/harvestapi-posts-kira.json -> data.alexandria[0].{creditsCost, data}. */
+    async alexandria(provider, capability, options) {
+      const json = await post('/scrape', { alexandria: { provider, capability, options } });
+      const r = json.data?.alexandria?.[0];
+      if (!r) throw new Error(`alexandria ${provider} ${capability}: empty response`);
+      credits += Number(r.creditsCost || 0);
+      if (r.error) throw new Error(`alexandria ${provider} ${capability}: ${r.error.code || r.error.message || 'error'}`);
+      return r.data;
+    },
     usage() { return { provider: 'firecrawl', credits, retries, costUsd: round4(credits * usdPerCredit) }; },
   };
 }
