@@ -1,0 +1,475 @@
+{
+  "parent_company": "Celsius Holdings, Inc.",
+  "summary": [
+    {
+      "text": "Alani Nu is a wellness and energy drink brand founded in 2018, sold at major US retailers and online at alaninu.com.",
+      "fact_ids": [
+        "f1",
+        "f2"
+      ]
+    },
+    {
+      "text": "Celsius Holdings (Nasdaq: CELH) acquired Alani Nu from its Congo Brands-backed owners in 2025 for $1.8 billion, including $150 million in tax assets.",
+      "fact_ids": [
+        "f4",
+        "f5",
+        "f6",
+        "f7"
+      ]
+    },
+    {
+      "text": "Alani Nu passed $1 billion in trailing 52-week retail sales as of April 2025 and moved into PepsiCo's U.S. and Canadian distribution system in August 2025.",
+      "fact_ids": [
+        "f16",
+        "f17",
+        "f18"
+      ]
+    },
+    {
+      "text": "Marketing for Alani Nu now sits under Celsius Holdings CMO Rishi Daing, with Chief Creative Officer JoBeth Fink, a longtime Alani Nu creative leader, and Chief Brand Officer Kyle Watson reporting to him.",
+      "fact_ids": [
+        "f8",
+        "f11",
+        "f12",
+        "f14"
+      ]
+    },
+    {
+      "text": "The brand leans on limited-edition seasonal drops, including the fall 2026 Witch's Brew return, the Ruby Apple Potion Pack, the Voodoo Vanilla energy elixir, and a holiday Sugar Shoppe merch collection.",
+      "fact_ids": [
+        "f19",
+        "f20",
+        "f21",
+        "f22",
+        "f23"
+      ]
+    }
+  ],
+  "facts": [
+    {
+      "id": "f1",
+      "claim": "Alani Nu was founded in 2018 and describes itself as a premium wellness brand made in the USA.",
+      "kind": "about",
+      "date": "2018",
+      "url": "https://www.linkedin.com/company/alani-nutrition",
+      "quote": "founded in 2018, alani nu® is a premium wellness brand that is made in the usa.",
+      "inferred": false,
+      "vendor": false,
+      "label": "single_source",
+      "source_kind": "profile",
+      "corroborating": []
+    },
+    {
+      "id": "f2",
+      "claim": "Alani Nu products are sold at Target, Amazon, GNC, The Vitamin Shoppe, Kroger and QuikTrip across the US.",
+      "kind": "about",
+      "date": null,
+      "url": "https://www.linkedin.com/company/alani-nutrition",
+      "quote": "our wide range of health and fitness supplements can be found in target, on amazon, in gnc, in the vitamin shoppe, in kroger and in quiktrip stores across the united states.",
+      "inferred": false,
+      "vendor": false,
+      "label": "single_source",
+      "source_kind": "profile",
+      "corroborating": []
+    },
+    {
+      "id": "f3",
+      "claim": "Alani Nutrition's primary listed location is in Boca Raton, Florida.",
+      "kind": "about",
+      "date": null,
+      "url": "https://www.linkedin.com/company/alani-nutrition",
+      "quote": "Street address: 2381 Nw Executive Center Dr, City: Boca Raton, State: Florida",
+      "inferred": false,
+      "vendor": false,
+      "label": "single_source",
+      "source_kind": "profile",
+      "corroborating": []
+    },
+    {
+      "id": "f4",
+      "claim": "Celsius Holdings owns Alani Nu following a $1.8 billion acquisition completed in 2025.",
+      "kind": "acquisition",
+      "date": "2025",
+      "url": "https://www.companieshistory.com/who-owns-alani/",
+      "quote": "Celsius Holdings owns Alani Nu following a $1.8 billion acquisition completed in 2025.",
+      "inferred": false,
+      "vendor": false,
+      "label": "single_source",
+      "source_kind": "press",
+      "corroborating": []
+    },
+    {
+      "id": "f5",
+      "claim": "The deal consisted of $1.275 billion in cash, $500 million in Celsius stock, a potential $25 million earn-out and $150 million in tax assets.",
+      "kind": "acquisition",
+      "date": "2025",
+      "url": "https://www.companieshistory.com/who-owns-alani/",
+      "quote": "The deal structure included $1.275 billion in cash, $500 million in Celsius stock, a potential $25 million earn-out, and $150 million in tax assets.",
+      "inferred": false,
+      "vendor": false,
+      "label": "single_source",
+      "source_kind": "press",
+      "corroborating": []
+    },
+    {
+      "id": "f6",
+      "claim": "Before the acquisition, Alani Nu was founded by Katy Hearn Schneider and her husband Haydn and operated by Congo Brands.",
+      "kind": "about",
+      "date": null,
+      "url": "https://www.companieshistory.com/who-owns-alani/",
+      "quote": "The energy drink brand, founded in 2018 by Katy Hearn Schneider and her husband Haydn, was previously operated by Congo Brands before the transaction.",
+      "inferred": false,
+      "vendor": false,
+      "label": "single_source",
+      "source_kind": "press",
+      "corroborating": []
+    },
+    {
+      "id": "f7",
+      "claim": "Celsius Holdings (Nasdaq: CELH) describes itself as the owner of CELSIUS, CELSIUS HYDRATION, health and wellness brand Alani Nu, and Rockstar Energy.",
+      "kind": "about",
+      "date": "2025-09-08",
+      "url": "https://ir.celsiusholdingsinc.com/news/news-details/2025/Celsius-Holdings-Names-Chief-Marketing-Officer-and-Announces-Marketing-Leadership-Appointments/default.aspx",
+      "quote": "Celsius Holdings, Inc. (Nasdaq: CELH) is a functional beverage company and the owner of energy drink brand CELSIUS®, hydration brand CELSIUS HYDRATION™, health and wellness brand Alani Nu® and Rockstar Energy®.",
+      "inferred": false,
+      "vendor": false,
+      "label": "verified",
+      "source_kind": "primary",
+      "corroborating": []
+    },
+    {
+      "id": "f8",
+      "claim": "Celsius Holdings appointed Rishi Daing as Chief Marketing Officer, overseeing marketing across the portfolio including Alani Nu.",
+      "kind": "leadership",
+      "date": "2025-09-08",
+      "url": "https://ir.celsiusholdingsinc.com/news/news-details/2025/Celsius-Holdings-Names-Chief-Marketing-Officer-and-Announces-Marketing-Leadership-Appointments/default.aspx",
+      "quote": "Celsius Holdings, Inc. (Nasdaq: CELH) today announced the appointment of Rishi Daing as Chief Marketing Officer, effective today.",
+      "inferred": false,
+      "vendor": false,
+      "label": "verified",
+      "source_kind": "primary",
+      "corroborating": []
+    },
+    {
+      "id": "f9",
+      "claim": "Daing reports to President and Chief Operating Officer Eric Hanson.",
+      "kind": "leadership",
+      "date": "2025-09-08",
+      "url": "https://ir.celsiusholdingsinc.com/news/news-details/2025/Celsius-Holdings-Names-Chief-Marketing-Officer-and-Announces-Marketing-Leadership-Appointments/default.aspx",
+      "quote": "will report to President and Chief Operating Officer Eric Hanson.",
+      "inferred": false,
+      "vendor": false,
+      "label": "verified",
+      "source_kind": "primary",
+      "corroborating": []
+    },
+    {
+      "id": "f10",
+      "claim": "Daing previously held senior roles at PepsiCo, Tata Consumer Products and Mark Anthony Brands.",
+      "kind": "leadership",
+      "date": "2025-09-08",
+      "url": "https://ir.celsiusholdingsinc.com/news/news-details/2025/Celsius-Holdings-Names-Chief-Marketing-Officer-and-Announces-Marketing-Leadership-Appointments/default.aspx",
+      "quote": "Daing brings more than two decades of global marketing and commercial leadership experience, including senior roles at PepsiCo, Tata Consumer Products, and most recently Mark Anthony Brands",
+      "inferred": false,
+      "vendor": false,
+      "label": "verified",
+      "source_kind": "primary",
+      "corroborating": []
+    },
+    {
+      "id": "f11",
+      "claim": "JoBeth Fink, named Chief Creative Officer, joined Celsius Holdings in 2025 through the Alani Nu acquisition and oversees the Celsius Holdings Brand Studio.",
+      "kind": "leadership",
+      "date": "2025-09-08",
+      "url": "https://ir.celsiusholdingsinc.com/news/news-details/2025/Celsius-Holdings-Names-Chief-Marketing-Officer-and-Announces-Marketing-Leadership-Appointments/default.aspx",
+      "quote": "She joined Celsius Holdings in 2025 through the Alani Nu acquisition and has since led creative initiatives across the portfolio.",
+      "inferred": false,
+      "vendor": false,
+      "label": "verified",
+      "source_kind": "primary",
+      "corroborating": []
+    },
+    {
+      "id": "f12",
+      "claim": "Kyle Watson (chief brand officer) and JoBeth Fink (chief creative officer) report to Daing.",
+      "kind": "leadership",
+      "date": "2025-09",
+      "url": "https://www.just-drinks.com/news/celsius-marketing-hires-mega-brands/",
+      "quote": "Reporting to Daing are newly appointed chief brand officer Kyle Watson and chief creative officer JoBeth Fink.",
+      "inferred": false,
+      "vendor": false,
+      "label": "single_source",
+      "source_kind": "press",
+      "corroborating": []
+    },
+    {
+      "id": "f13",
+      "claim": "John Fieldly is Celsius Holdings Chairman and CEO.",
+      "kind": "leadership",
+      "date": "2025-09-08",
+      "url": "https://ir.celsiusholdingsinc.com/news/news-details/2025/Celsius-Holdings-Names-Chief-Marketing-Officer-and-Announces-Marketing-Leadership-Appointments/default.aspx",
+      "quote": "said Celsius Holdings Chairman and CEO John Fieldly.",
+      "inferred": false,
+      "vendor": false,
+      "label": "verified",
+      "source_kind": "primary",
+      "corroborating": []
+    },
+    {
+      "id": "f14",
+      "claim": "Before Celsius, Fink held the title senior vice president of marketing brand and innovation at Alani Nutrition, after serving as vice president of creative from 2019.",
+      "kind": "leadership",
+      "date": "2025-04",
+      "url": "https://www.linkedin.com/in/jobethfink",
+      "quote": "2025-04 - 2025-05: senior vice president of marketing brand and innovation",
+      "inferred": false,
+      "vendor": false,
+      "label": "single_source",
+      "source_kind": "profile",
+      "corroborating": []
+    },
+    {
+      "id": "f15",
+      "claim": "Alani Nu reportedly generated $595 million in revenue in 2024 with 78% year-over-year retail sales growth.",
+      "kind": "financial",
+      "date": "2024",
+      "url": "https://www.companieshistory.com/who-owns-alani/",
+      "quote": "Alani Nu achieved $595 million in revenue during 2024 with a remarkable 78% year-over-year retail sales growth.",
+      "inferred": false,
+      "vendor": false,
+      "label": "single_source",
+      "source_kind": "press",
+      "corroborating": []
+    },
+    {
+      "id": "f16",
+      "claim": "Celsius announced Alani Nu surpassed $1 billion in trailing 52-week retail sales for the period ending April 13, 2025.",
+      "kind": "financial",
+      "date": "2025-04-13",
+      "url": "https://www.flavorist.com/alani-nu-witchs-brew-2026-ruby-apple-voodoo-vanilla/",
+      "quote": "for the period ending April 13, 2025",
+      "inferred": false,
+      "vendor": false,
+      "label": "single_source",
+      "source_kind": "press",
+      "corroborating": []
+    },
+    {
+      "id": "f17",
+      "claim": "In August 2025 Celsius and PepsiCo expanded their partnership, moving Alani Nu into PepsiCo's U.S. and Canadian distribution system.",
+      "kind": "other",
+      "date": "2025-08",
+      "url": "https://www.flavorist.com/alani-nu-witchs-brew-2026-ruby-apple-voodoo-vanilla/",
+      "quote": "that included moving Alani Nu into PepsiCo’s U.S. and Canadian distribution system.",
+      "inferred": false,
+      "vendor": false,
+      "label": "single_source",
+      "source_kind": "press",
+      "corroborating": []
+    },
+    {
+      "id": "f18",
+      "claim": "PepsiCo raised its ownership in Celsius Holdings to about 11% on an as-converted basis in August 2025.",
+      "kind": "financial",
+      "date": "2025-08",
+      "url": "https://www.companieshistory.com/who-owns-alani/",
+      "quote": "PepsiCo increased its ownership in Celsius Holdings to approximately 11% on an as-converted basis through a strategic investment completed in August 2025.",
+      "inferred": false,
+      "vendor": false,
+      "label": "single_source",
+      "source_kind": "press",
+      "corroborating": []
+    },
+    {
+      "id": "f19",
+      "claim": "Alani Nu's fall 2026 collection brings back Witch's Brew in two can sizes and debuts Ruby Apple in a new Potion Pack variety pack, launching August 12, 2026.",
+      "kind": "launch",
+      "date": "2026-08-12",
+      "url": "https://www.flavorist.com/alani-nu-witchs-brew-2026-ruby-apple-voodoo-vanilla/",
+      "quote": "Witch’s Brew will return in two can sizes, while Ruby Apple will debut inside a new Potion Pack variety pack.",
+      "inferred": false,
+      "vendor": false,
+      "label": "single_source",
+      "source_kind": "press",
+      "corroborating": []
+    },
+    {
+      "id": "f20",
+      "claim": "Voodoo Vanilla is a new product concept for Alani Nu, an energy elixir.",
+      "kind": "launch",
+      "date": "2026-08-12",
+      "url": "https://www.flavorist.com/alani-nu-witchs-brew-2026-ruby-apple-voodoo-vanilla/",
+      "quote": "Voodoo Vanilla, meanwhile, introduces an entirely new product concept for Alani Nu: an “energy elixir.”",
+      "inferred": false,
+      "vendor": false,
+      "label": "single_source",
+      "source_kind": "press",
+      "corroborating": []
+    },
+    {
+      "id": "f21",
+      "claim": "Voodoo Vanilla is sold through AlaniNu.com, Amazon and The Vitamin Shoppe.",
+      "kind": "launch",
+      "date": "2026-08",
+      "url": "https://www.flavorist.com/alani-nu-witchs-brew-2026-ruby-apple-voodoo-vanilla/",
+      "quote": "According to the company, Voodoo Vanilla will be sold through AlaniNu.com, Amazon and The Vitamin Shoppe",
+      "inferred": false,
+      "vendor": false,
+      "label": "single_source",
+      "source_kind": "press",
+      "corroborating": []
+    },
+    {
+      "id": "f22",
+      "claim": "Witch's Brew first appeared in 2021.",
+      "kind": "launch",
+      "date": "2021",
+      "url": "https://www.flavorist.com/alani-nu-witchs-brew-2026-ruby-apple-voodoo-vanilla/",
+      "quote": "The launch comes as Alani Nu operates on a much larger scale than when Witch’s Brew first appeared in 2021.",
+      "inferred": false,
+      "vendor": false,
+      "label": "single_source",
+      "source_kind": "press",
+      "corroborating": []
+    },
+    {
+      "id": "f23",
+      "claim": "The Alani Nu homepage promotes a holiday Sugar Shoppe collection of merch, with a Winter Wonderland energy drink listed as coming 11.30.",
+      "kind": "launch",
+      "date": null,
+      "url": "https://alaninu.com/",
+      "quote": "the sugar shoppe's open",
+      "inferred": false,
+      "vendor": false,
+      "label": "verified",
+      "source_kind": "primary",
+      "corroborating": []
+    },
+    {
+      "id": "f24",
+      "claim": "Alani Nu positions itself as community-first.",
+      "kind": "about",
+      "date": null,
+      "url": "https://www.alaninu.com/pages/about-alani-nu",
+      "quote": "since day one, every move we make starts with you. at Alani, community is our entire world.",
+      "inferred": false,
+      "vendor": false,
+      "label": "verified",
+      "source_kind": "primary",
+      "corroborating": []
+    },
+    {
+      "id": "f25",
+      "claim": "Celsius Holdings' U.S. headquarters is in Boca Raton, Florida.",
+      "kind": "about",
+      "date": "2025-09-08",
+      "url": "https://ir.celsiusholdingsinc.com/news/news-details/2025/Celsius-Holdings-Names-Chief-Marketing-Officer-and-Announces-Marketing-Leadership-Appointments/default.aspx",
+      "quote": "He will be based at the company’s U.S. headquarters in Boca Raton, Fla.",
+      "inferred": false,
+      "vendor": false,
+      "label": "verified",
+      "source_kind": "primary",
+      "corroborating": []
+    }
+  ],
+  "rejected": [],
+  "conflicts": [
+    {
+      "topic": "Alani Nu sales growth rate",
+      "sources": [
+        {
+          "url": "https://www.companieshistory.com/who-owns-alani/",
+          "says": "78% year-over-year retail sales growth in 2024"
+        },
+        {
+          "url": "https://www.behaviolabs.com/blog/how-alani-nu-built-a-billion-dollar-brand-by-understanding-womens-subconscious-preferences",
+          "says": "sales rocketed 72.4% in one year"
+        }
+      ],
+      "resolution": "unresolved; both are secondary sources possibly measuring different periods or metrics"
+    },
+    {
+      "topic": "Founder attribution",
+      "sources": [
+        {
+          "url": "https://www.companieshistory.com/who-owns-alani/",
+          "says": "founded in 2018 by Katy Hearn Schneider and her husband Haydn"
+        },
+        {
+          "url": "https://www.behaviolabs.com/blog/how-alani-nu-built-a-billion-dollar-brand-by-understanding-womens-subconscious-preferences",
+          "says": "Alani Nu founder Katy Hearn"
+        }
+      ],
+      "resolution": "unresolved; no primary source in the set names the founders"
+    }
+  ],
+  "sources": [
+    {
+      "url": "https://alaninu.com/",
+      "title": "\n      Alani Nu | Big Flavor. Bright Energy.\n    ",
+      "kind": "primary"
+    },
+    {
+      "url": "https://www.linkedin.com/company/alani-nutrition",
+      "title": "Alani Nutrition",
+      "kind": "other"
+    },
+    {
+      "url": "https://www.companieshistory.com/who-owns-alani/",
+      "title": "Who Owns Alani?",
+      "kind": "other"
+    },
+    {
+      "url": "https://www.behaviolabs.com/blog/how-alani-nu-built-a-billion-dollar-brand-by-understanding-womens-subconscious-preferences",
+      "title": "How Alani Nu built a billion-dollar brand for women  | Behavio",
+      "kind": "other"
+    },
+    {
+      "url": "https://www.alaninu.com/pages/about-alani-nu",
+      "title": "\n      About Alani Nu\n    ",
+      "kind": "primary"
+    },
+    {
+      "url": "https://www.flavorist.com/alani-nu-witchs-brew-2026-ruby-apple-voodoo-vanilla/",
+      "title": "Alani Nu Witch’s Brew 2026 Returns With 2 New Fall Flavors",
+      "kind": "other"
+    },
+    {
+      "url": "https://ir.celsiusholdingsinc.com/news/news-details/2025/Celsius-Holdings-Names-Chief-Marketing-Officer-and-Announces-Marketing-Leadership-Appointments/default.aspx",
+      "title": "\n\tCelsius Holdings, Inc. - Celsius Holdings Names Chief Marketing Officer and Announces Marketing Leadership Appointments\n",
+      "kind": "other"
+    },
+    {
+      "url": "https://sporked.com/article/new-alani-nu-cotton-candy-grape-news/",
+      "title": "New Alani Nu Flavor! Cotton Candy Grape Alani Nu Energy Is Rumored to Return in 2026 | Sporked",
+      "kind": "other"
+    },
+    {
+      "url": "https://www.linkedin.com/in/jobethfink",
+      "title": "Jobeth Fink",
+      "kind": "other"
+    },
+    {
+      "url": "https://www.just-drinks.com/news/celsius-marketing-hires-mega-brands/",
+      "title": "Celsius makes marketing hires to build \"mega brands\"",
+      "kind": "other"
+    }
+  ],
+  "cost": {
+    "firecrawl": {
+      "provider": "firecrawl",
+      "credits": 36,
+      "retries": 1,
+      "costUsd": 0.036
+    },
+    "claude": {
+      "provider": "anthropic",
+      "model": "claude-opus-5-5",
+      "input": 47508,
+      "output": 8747,
+      "costUsd": 0.365,
+      "calls": 1
+    },
+    "seconds": 131
+  }
+}

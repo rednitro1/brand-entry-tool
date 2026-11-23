@@ -1,0 +1,37 @@
+{
+  "name": "Alani Nu",
+  "slug": "alani-nu",
+  "domain": "alaninu.com",
+  "siteUrl": "https://alaninu.com/",
+  "linkedinUrl": "https://www.linkedin.com/company/alani-nutrition/",
+  "socials": {
+    "instagram": {
+      "handle": "alaninutrition",
+      "url": "https://www.instagram.com/alaninutrition/",
+      "source": "official_site"
+    },
+    "tiktok": {
+      "handle": "alaninutrition",
+      "url": "https://www.tiktok.com/@alaninutrition",
+      "source": "official_site"
+    },
+    "x": {
+      "handle": "alaninutrition",
+      "url": "https://x.com/alaninutrition",
+      "source": "official_site"
+    },
+    "linkedin": {
+      "handle": "alani-nutrition",
+      "url": "https://www.linkedin.com/company/alani-nutrition/",
+      "source": "search",
+      "label": "single_source"
+    }
+  },
+  "evidence": [
+    {
+      "claim": "Social handles taken from the official site",
+      "url": "https://alaninu.com/",
+      "label": "verified"
+    }
+  ]
+}

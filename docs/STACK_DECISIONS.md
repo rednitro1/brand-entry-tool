@@ -32,3 +32,12 @@ Alternatives considered (to be filled with real numbers as I test):
 - A vendor post made unverifiable claims (creator spend, a 300+ campus ambassador program) → labeled `vendor_claim`.
 - The Instagram post scraper returns no follower counts and media URLs that expire → a separate profile scrape supplies counts, and no thumbnails are shown (posts are linked instead).
 - Leadership seat swaps inferred from press-release wording → labeled `inferred`.
+
+### Found while building (live Alani Nu runs, 2026-11-22)
+- **Handles don't match the brand name.** Alani Nu's Instagram, TikTok and X are all `alaninutrition`. Handles now come from the brand's own site footer (most frequent profile link per platform), never guessed from the name.
+- **No LinkedIn link on the brand site.** It comes from a `site:linkedin.com/company` search instead and is labeled `single_source` (it resolved to `alani-nutrition`).
+- **Firecrawl rate limit (11 req/min on this plan) dropped a key page.** Calls now run at most 3 at a time, and a 429 waits for the reset time Firecrawl names, then retries up to twice. One run went from a lost page to 1 retry and +1 source.
+- **Generic queries miss recent news.** The first run found nothing newer than 2025. Dated queries (current-year leadership, quarterly results) were added.
+- **A title change can show up on LinkedIn before any press.** Fink's "Chief Marketing Officer at Alani Nu" appears only in her LinkedIn headline, while every press release still says Chief Creative Officer. Titles come from the profile, and the conflict is shown.
+- **Receipts check:** every claim must cite a page the tool fetched and quote it verbatim. Of 25 claims in the last run, 25 passed; the fixture tests cover hallucinated quotes, unfetched URLs and missing URLs.
+- **Cost per profile:** about $0.40 (Firecrawl ~36 credits, Claude Opus 5.5 ~48k in / 9k out), 66 to 131 seconds.
