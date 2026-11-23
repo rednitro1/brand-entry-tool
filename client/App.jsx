@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { api } from './api.js';
 import { overallProgress, mergeLogs } from '../shared/progress.js';
+import { detectIndustry, rankCaseStudies, companyWide } from '../shared/caseStudies.js';
 
 /* ------------------------------- constants -------------------------------- */
 
@@ -410,6 +411,8 @@ function AccountPage({ slug, go, live }) {
         </div>
       )}
 
+      <CaseStudies b={b} go={go} />
+
       <div className="card">
         <h2>Stakeholders</h2>
         <div className="scroll">
@@ -797,6 +800,57 @@ function legacyOutreach(o) {
 function chooseTargetName(b) {
   for (const p of WEDGE) { const s = b.stakeholders.find((x) => x.persona === p); if (s) return s.full_name; }
   return 'the most senior person found';
+}
+
+/* ------------------------------- case studies ------------------------------- */
+
+function CaseStudies({ b, go }) {
+  const [pb, setPb] = useState(null);
+  const [all, setAll] = useState(false);
+  useEffect(() => { api.playbook().then((r) => setPb(r.content)).catch(() => setPb(null)); }, []);
+  if (!pb) return null;
+  const industry = detectIndustry(b);
+  const studies = rankCaseStudies(pb.proof, industry?.key);
+  const company = companyWide(pb.proof);
+  const matches = studies.filter((c) => c.match).length;
+  // Same-space customers, plus the two strongest stories with numbers from elsewhere.
+  const strongest = studies.filter((c) => !c.match && c.results.length).slice(0, 2);
+  const shown = all ? studies : [...studies.filter((c) => c.match), ...strongest].slice(0, Math.max(4, matches + strongest.length));
+  const toPlaybook = (e) => { e.preventDefault(); go({ page: 'playbook' }); };
+  return (
+    <div className="card cases">
+      <div className="card-head">
+        <h2>Relevant case studies</h2>
+        <span className="muted small">
+          {industry ? <>Looks like <strong>{industry.key}</strong> from its research · {matches ? `${matches} customer${matches === 1 ? '' : 's'} in the same space` : 'no customers in the same space yet'}</> : 'Industry not clear from the research'}
+        </span>
+      </div>
+      <div className="case-grid">
+        {shown.map((c) => (
+          <div key={c.customer} className={`case${c.match ? ' is-match' : ''}`}>
+            <div className="case-head">
+              <strong>{c.customer}</strong>
+              {c.match ? <span className="badge">Same space</span> : <span className="kind">{c.category}{c.results.length ? ' · strong numbers' : ''}</span>}
+            </div>
+            {c.results.length > 0 ? (
+              <ul>{c.results.slice(0, 3).map((r) => <li key={r.id}>{r.claim}</li>)}</ul>
+            ) : c.quotes.length > 0 ? (
+              <ul>{c.quotes.slice(0, 2).map((q) => <li key={q.id}>{q.claim}</li>)}</ul>
+            ) : (
+              <p className="muted small">Nectar customer. No published results yet.</p>
+            )}
+            {c.results.length === 0 && <p className="case-note">No numbers to quote; name them as a customer only.</p>}
+            {c.source_url && <a className="case-link" href={c.source_url} target="_blank" rel="noreferrer">Source</a>}
+          </div>
+        ))}
+      </div>
+      {studies.length > shown.length && <button className="link more" onClick={() => setAll(true)}>Show {studies.length - shown.length} more</button>}
+      {company.length > 0 && (
+        <p className="case-company"><strong>Nectar overall:</strong> {company.map((p) => p.claim).join(' ')}</p>
+      )}
+      <p className="muted small">From the <a href="/playbook" onClick={toPlaybook}>Playbook</a> proof library. Add results there and they show up here and in drafts.</p>
+    </div>
+  );
 }
 
 function Summary({ points, factById }) {
