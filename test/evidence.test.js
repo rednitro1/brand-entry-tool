@@ -57,7 +57,7 @@ test('classifySource: brand site and parent IR are primary, LinkedIn is profile'
 
 test('finalizeProfile drops summary points whose facts were all rejected, and one-sided conflicts', () => {
   const raw = {
-    parent_company: 'Celsius Holdings', parent_domain: 'celsiusholdingsinc.com',
+    ownership: { status: 'subsidiary', parent_company: 'Celsius Holdings', parent_domain: 'celsiusholdingsinc.com', ticker: 'CELH', as_of: '2025-04', fact_ids: ['f1'], reasoning: 'Wire release.' },
     facts: claims,
     conflicts: [
       { topic: 'Founding year', sources: [{ url: pages[1].url, says: '2018' }, { url: 'https://never-fetched.com', says: '2017' }], resolution: 'unresolved' },
