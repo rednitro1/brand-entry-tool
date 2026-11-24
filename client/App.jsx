@@ -3,6 +3,7 @@ import { api } from './api.js';
 import { overallProgress, mergeLogs } from '../shared/progress.js';
 import { detectIndustry, rankCaseStudies, companyWide } from '../shared/caseStudies.js';
 import { StackPage, AppendixPage } from './Docs.jsx';
+import { buildSignals } from '../shared/signals.js';
 
 /* ------------------------------- constants -------------------------------- */
 
@@ -454,6 +455,7 @@ function AccountPage({ slug, tab, go, live }) {
 
       {tab === 'overview' && (
         <>
+          <Signals b={b} />
           {profile && (profile.summary || []).length > 0 && (
             <div className="card">
               <h2>Summary</h2>
@@ -936,6 +938,68 @@ function CaseStudies({ b, go }) {
         <p className="case-company"><strong>Nectar overall:</strong> {company.map((p) => p.claim).join(' ')}</p>
       )}
       <p className="muted small">From the <a href="/playbook" onClick={toPlaybook}>Playbook</a> proof library. Add results there and they show up here and in drafts.</p>
+    </div>
+  );
+}
+
+/* Signals: recent changes at the account, grouped, newest first, each with its receipt. */
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+function signalDate(raw) {
+  const m = String(raw || '').match(/^(\d{4})(?:-(\d{2}))?(?:-(\d{2}))?/);
+  if (!m) return 'Date not stated';
+  return m[2] ? `${MONTHS[Number(m[2]) - 1]}${m[3] ? ` ${Number(m[3])},` : ''} ${m[1]}` : m[1];
+}
+
+function Signals({ b }) {
+  const [showOld, setShowOld] = useState({});
+  const { groups, count } = buildSignals(b);
+  if (!b.profile && !groups.length) return null;
+  return (
+    <div className="card signals">
+      <div className="card-head">
+        <h2>Signals</h2>
+        <span className="muted small">{count ? `${count} in the last 2 years · newest first · dates are the source's date` : 'Nothing recent found in the research'}</span>
+      </div>
+      {groups.length === 0 ? (
+        <p className="muted">No new seats, leadership changes, corporate events, launches or results turned up in this research.</p>
+      ) : (
+        <div className="signal-groups">
+          {groups.map((g) => {
+            const older = g.items.filter((i) => i.older);
+            const shown = showOld[g.key] ? g.items : g.items.filter((i) => !i.older);
+            return (
+              <section key={g.key} className={`signal-group sg-${g.key}`}>
+                <h3>{g.title}<span>{g.sub}</span></h3>
+                <ul>
+                  {shown.map((i, n) => {
+                    const raw = i.ref.type === 'fact' ? i.ref.fact.date : i.ref.person.started_role_at;
+                    return (
+                      <li key={n} className={i.older ? 'is-old' : ''}>
+                        <span className="sig-date">{signalDate(raw)}{i.recent && <span className="sig-new">New</span>}</span>
+                        <span className="sig-text">
+                          {i.text}
+                          <span className="sig-src">
+                            {i.ref.type === 'fact' ? (
+                              <><Label value={i.ref.fact.label} /> <a href={i.ref.fact.url} target="_blank" rel="noreferrer" title={i.ref.fact.quote}>{hostname(i.ref.fact.url)}</a></>
+                            ) : (
+                              <>Apollo job history{i.ref.person.linkedin_url && <> · <a href={i.ref.person.linkedin_url} target="_blank" rel="noreferrer">LinkedIn</a></>}</>
+                            )}
+                          </span>
+                        </span>
+                      </li>
+                    );
+                  })}
+                </ul>
+                {older.length > 0 && (
+                  <button className="link more" onClick={() => setShowOld((o) => ({ ...o, [g.key]: !o[g.key] }))}>
+                    {showOld[g.key] ? 'Hide older' : `Show ${older.length} older`}
+                  </button>
+                )}
+              </section>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }
