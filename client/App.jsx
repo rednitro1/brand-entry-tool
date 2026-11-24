@@ -2,6 +2,7 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { api } from './api.js';
 import { overallProgress, mergeLogs } from '../shared/progress.js';
 import { detectIndustry, rankCaseStudies, companyWide } from '../shared/caseStudies.js';
+import { StackPage, AppendixPage } from './Docs.jsx';
 
 /* ------------------------------- constants -------------------------------- */
 
@@ -43,6 +44,8 @@ function currentRoute() {
   if (parts[0] === 'accounts') return { page: 'accounts' };
   if (parts[0] === 'spend') return { page: 'spend' };
   if (parts[0] === 'playbook') return { page: 'playbook' };
+  if (parts[0] === 'stack') return { page: 'stack' };
+  if (parts[0] === 'appendix') return { page: 'appendix' };
   return { page: 'search' };
 }
 function pathFor(r) {
@@ -50,6 +53,8 @@ function pathFor(r) {
   if (r.page === 'accounts') return '/accounts';
   if (r.page === 'spend') return '/spend';
   if (r.page === 'playbook') return '/playbook';
+  if (r.page === 'stack') return '/stack';
+  if (r.page === 'appendix') return '/appendix';
   return '/';
 }
 
@@ -78,13 +83,15 @@ export default function App() {
         {route.page === 'account' && <AccountPage slug={route.slug} tab={route.tab || 'overview'} go={go} live={live} />}
         {route.page === 'spend' && <SpendPage go={go} live={live} />}
         {route.page === 'playbook' && <PlaybookPage />}
+        {route.page === 'stack' && <StackPage />}
+        {route.page === 'appendix' && <AppendixPage />}
       </main>
     </div>
   );
 }
 
 function Sidebar({ tab, go, live }) {
-  const items = [['search', 'Search', IconSearch], ['accounts', 'Accounts', IconList], ['playbook', 'Playbook', IconBook], ['spend', 'Spend', IconCoins]];
+  const items = [['search', 'Search', IconSearch], ['accounts', 'Accounts', IconList], ['playbook', 'Playbook', IconBook], ['spend', 'Spend', IconCoins], ['stack', 'Stack Decisions', IconLayers], ['appendix', 'Appendix: What I Cut', IconScissors]];
   return (
     <aside className="sidebar">
       <a className="brandmark" href="/" onClick={(e) => { e.preventDefault(); go({ page: 'search' }); }}>
@@ -1237,3 +1244,5 @@ function IconList() { return <svg width="16" height="16" viewBox="0 0 24 24" fil
 function IconCoins() { return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><ellipse cx="9" cy="7" rx="6" ry="3" /><path d="M3 7v5c0 1.7 2.7 3 6 3s6-1.3 6-3V7" /><path d="M15 11.5c3.1.2 6 1.4 6 3V19c0 1.7-2.7 3-6 3-2 0-3.7-.5-4.8-1.2" /></svg>; }
 function IconBook() { return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20V3H6.5A2.5 2.5 0 0 0 4 5.5v14z" /><path d="M8 7h8M8 11h6" /></svg>; }
 function IconCheck() { return <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M5 12l5 5L20 7" /></svg>; }
+function IconLayers() { return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m12 3 9 5-9 5-9-5 9-5z" /><path d="m3 13 9 5 9-5" /></svg>; }
+function IconScissors() { return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><circle cx="6" cy="6" r="3" /><circle cx="6" cy="18" r="3" /><path d="M20 4 8.1 15.9M14.5 14.5 20 20M8.1 8.1 12 12" /></svg>; }
