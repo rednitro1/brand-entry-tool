@@ -305,6 +305,10 @@ export function AppendixPage() {
             <p>I'd connect the Reddit API to read what people say about new product launches. That API is hard to get access to, and Nectar already has it.</p>
           </div>
           <div>
+            <h3>A much cheaper run</h3>
+            <p>I'd spend real time cutting the cost per run: chaining LLM calls down to very small tasks, and sending each one only to the model it actually needs. Figuring out how to do that well takes a lot of time on its own, so for this version I kept it simple and stayed in Claude: Opus for research, Sonnet for writing. I could have split the work across many more models, but that's the 10-hour version. This is the 5-hour version.</p>
+          </div>
+          <div>
             <h3>With access to Nectar</h3>
             <p>If I had login access to Nectar, I'd use its own data and APIs to make this tool much better. I'd also add Meta Ads API calls to see how ad engagement performs, not just organic posts, using the same comment signals.</p>
           </div>
