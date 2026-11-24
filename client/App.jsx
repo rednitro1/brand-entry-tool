@@ -408,6 +408,7 @@ function AccountPage({ slug, tab, go, live }) {
     { tab: 'people', value: recentPosts, label: 'posts, last 3 months' },
     { tab: 'plan', value: planText, label: 'engagement plan', state: d?.status === 'done' ? (flags ? 'warn' : 'ok') : d?.status === 'failed' ? 'bad' : '' },
   ];
+  const badgeTip = { plan: d?.status === 'done' ? (flags ? `Drafted, with ${flags} thing${flags === 1 ? '' : 's'} to check before using` : 'Drafted, all checks passed') : d?.status === 'running' ? 'Drafting now' : '' };
   const badge = { people: stakeholders.length, plan: d?.status === 'done' ? (flags ? '!' : '✓') : d?.status === 'running' ? '…' : '', receipts: facts.length };
 
   // Choosing posts happens in the Plan tab, with the feed right under the redraft buttons.
@@ -448,7 +449,7 @@ function AccountPage({ slug, tab, go, live }) {
         {ACCOUNT_TABS.map(([k, label]) => (
           <a key={k} role="tab" aria-selected={tab === k} className={`tabbtn${tab === k ? ' on' : ''}`} href={pathFor({ page: 'account', slug, tab: k })}
             onClick={(e) => { e.preventDefault(); setTab(k); }}>
-            {label}{badge[k] !== undefined && badge[k] !== '' && <span className="tabcount">{badge[k]}</span>}
+            {label}{badge[k] !== undefined && badge[k] !== '' && <span className="tabcount" title={badgeTip[k] || undefined}>{badge[k]}</span>}
           </a>
         ))}
       </nav>

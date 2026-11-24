@@ -164,9 +164,23 @@ export function unsupportedNumbers(copy, sourceTexts) {
 
 /* -------------------------------- validator -------------------------------- */
 
-const brandWords = (name) => String(name || '')
-  .replace(/\b(llc|inc|co|corp|ltd|company|nutrition|beverages?|foods?|brands?)\b\.?/gi, '')
-  .split(/\s+/).map((w) => w.trim()).filter((w) => w.length >= 3);
+/* The words that identify the brand in its name. Category words ("Beauty" in Fenty
+   Beauty, "Energy" in Monster Energy) are left out: an own post may say "beauty brands"
+   without naming Fenty. If every word is generic, the full name is the only signal. */
+const GENERIC_NAME_WORDS = new Set(['llc', 'inc', 'co', 'corp', 'ltd', 'company', 'the', 'and', 'brand', 'brands',
+  'nutrition', 'beverage', 'beverages', 'drink', 'drinks', 'energy', 'sparkling', 'water', 'coffee', 'tea', 'juice', 'soda',
+  'food', 'foods', 'snack', 'snacks', 'protein', 'beauty', 'cosmetics', 'skincare', 'skin', 'care', 'hair', 'makeup',
+  'fragrance', 'labs', 'lab', 'goods', 'leather', 'apparel', 'health', 'wellness', 'fitness', 'home', 'pet', 'group', 'holdings']);
+export const brandWords = (name) => String(name || '')
+  .split(/[\s\-&/]+/).map((w) => w.replace(/[^\p{L}\p{N}'.]/gu, '').replace(/\.$/, ''))
+  .filter((w) => w.length >= 3 && !GENERIC_NAME_WORDS.has(w.toLowerCase()));
+const escapeRe = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+export function namesBrand(text, brandName) {
+  const full = String(brandName || '').trim();
+  const hits = brandWords(full).filter((w) => new RegExp(`\\b${escapeRe(w)}\\b`, 'i').test(text || ''));
+  if (full && new RegExp(`\\b${escapeRe(full)}\\b`, 'i').test(text || '') && !hits.length) hits.push(full);
+  return hits;
+}
 
 /* Comments are one short, casual sentence: no follow-on sentences, no questions. */
 export const COMMENT_MAX_CHARS = 160;
@@ -223,7 +237,7 @@ export function validateDraft(draft, { evidence, playbook, brandName, picks = []
   if ((draft.comments || []).length !== picks.length) problems.push({ where: 'comments', issue: `expected ${picks.length} comments, got ${(draft.comments || []).length}` });
   check('own post', draft.own_post);
   if (draft.own_post) {
-    const named = brandWords(brandName).filter((w) => new RegExp(`\\b${w}\\b`, 'i').test(draft.own_post.text));
+    const named = namesBrand(draft.own_post.text, brandName);
     if (named.length) problems.push({ where: 'own post', issue: `names the target brand (${named.join(', ')})` });
   }
   const limit = playbook.rules?.connection_note_max || 200;
