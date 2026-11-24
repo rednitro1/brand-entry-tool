@@ -606,3 +606,16 @@ details.outreach[open] > summary { margin-bottom: 6px; }
 .tool-item { display: flex; gap: 12px; align-items: flex-start; padding: 12px 14px; border: 1px solid var(--line); border-radius: 12px; min-width: 0; }
 .tool-item strong { display: block; font: 600 14px var(--sans); margin-bottom: 2px; }
 .tool-item span { font-size: 13px; line-height: 1.45; color: var(--ink-2); }
+
+/* stack decisions: why this stack */
+.why-lead { margin: 0 0 10px; color: var(--ink-2); font-size: 14px; line-height: 1.55; }
+.alts { margin: 0; padding-left: 20px; display: grid; gap: 8px; font-size: 14px; line-height: 1.55; color: var(--ink-2); }
+.alts strong { color: var(--ink); }
+.why-extra { margin: 12px 0 0; padding: 10px 12px; border-radius: 10px; background: var(--green-wash); font-size: 13.5px; line-height: 1.5; color: var(--ink); }
+
+/* stack decisions: where the data was bad */
+.bad-groups { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 16px 24px; }
+.bad-group h3 { font: 600 13px var(--sans); text-transform: uppercase; letter-spacing: .06em; color: var(--green-ink); margin: 0 0 8px; }
+.bad-group ol { margin: 0; padding-left: 20px; display: grid; gap: 10px; font-size: 14px; line-height: 1.5; color: var(--ink-2); }
+.bad-group strong { color: var(--ink); }
+.bad-group .fix { display: block; margin-top: 4px; padding: 6px 10px; border-radius: 8px; background: var(--green-wash); color: var(--ink); font-size: 13px; }

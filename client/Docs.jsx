@@ -197,6 +197,29 @@ const TOOL_LIST = [
   { t: 'railway', name: 'Railway', does: 'Hosts the app, the API and the background jobs.' },
 ];
 
+/* Why this stack over the alternatives (Ben's reasoning). */
+const ALTERNATIVES = [
+  ['Clay', "Great tool, but it can take a long time to load. It makes the most sense in an enterprise setup already wired into Salesforce and LinkedIn Sales Navigator. I'm working off my own stack, so going direct to Apollo, Prospeo and Firecrawl was cheaper and faster."],
+  ['LinkedIn Sales Navigator', 'Same enterprise story, and it means working behind a LinkedIn login. This tool only reads public data and never touches LinkedIn as a user, so public posts come through HarvestAPI instead.'],
+  ['A custom LinkedIn scraper', 'In my manual research, LinkedIn profile pages timed out in the browser. Firecrawl\'s HarvestAPI provider returned the same posts reliably for a few credits a call.'],
+  ['Apify to find and enrich social profiles in one step', 'I tried this first. It picked up look-alike bot accounts and stale official accounts. Now Firecrawl reads the profiles from the brand\'s own homepage footer, and Apify only enriches them.'],
+  ['Prospeo as the main people search', 'Its exact-title filters returned nothing unless titles matched its own list. Apollo became primary, with Prospeo as the fallback.'],
+];
+
+/* Where the data was bad while building, and the fix (Ben's picks). */
+const BAD_DATA = [
+  ['Finding the data', [
+    ['Searching found the wrong social accounts.', 'Look-alike bot accounts and old, abandoned official accounts came back as matches.', "The tool reads the official profile links from the brand's own homepage footer instead of searching for them."],
+    ['Rate limits silently dropped pages.', "Firecrawl's request limit lost pages mid-run, so research came back thinner than it should have.", 'A few requests at a time, and when a limit hits, wait for the reset and retry.'],
+    ['Searches missed recent news.', 'Generic searches surfaced years-old articles.', "Dated searches for this year's leadership changes, launches and latest quarterly results."],
+  ]],
+  ['Quality of what the AI produced', [
+    ['Facts with no proof.', "The AI would state things its sources didn't support.", "Every fact must quote the page it came from word for word, or it's dropped. Claims are labeled verified, single source or inferred."],
+    ['Copy that read as AI.', 'Comments recapped the post, asked fishing questions or pitched; DMs were full of fluff.', 'Fixed message templates in a Playbook, one-sentence casual comments, a banned-phrase list, and server checks with one automatic redraft.'],
+    ['Wrong case studies.', 'Keyword matching put brands in the wrong space (a word like "tea" matched inside "team"), so the wrong customers showed up as same-space proof.', 'Whole-word matching, with customers labeled same space or adjacent.'],
+  ]],
+];
+
 const GUARDRAILS = [
   ['Recommends only', 'Nothing posts, comments, connects or messages on LinkedIn.'],
   ['Keys stay on the server', 'Environment variables only; never in the browser or the repo.'],
@@ -226,8 +249,33 @@ export function StackPage() {
       </div>
 
       <div className="card">
+        <h2>Why this stack</h2>
+        <p className="why-lead">I picked this stack because it was the most efficient way to deliver quality research while keeping cost under control, working from my own tools and my own budget. The five alternatives I considered:</p>
+        <ol className="alts">
+          {ALTERNATIVES.map(([name, why]) => <li key={name}><strong>{name}.</strong> {why}</li>)}
+        </ol>
+        <p className="why-extra"><strong>And the lazy option, running everything on Opus:</strong> instead, cheap APIs do the finding and fetching, Opus only reads pages for facts, and Sonnet writes the copy.</p>
+      </div>
+
+      <div className="card">
         <div className="card-head"><h2>How information flows</h2><span className="muted small">From a brand name to copy you send yourself</span></div>
         <FlowDiagram />
+      </div>
+
+      <div className="card">
+        <h2>Where the data was bad, and how I routed around it</h2>
+        <div className="bad-groups">
+          {BAD_DATA.map(([group, items], gi) => (
+            <div key={group} className="bad-group">
+              <h3>{group}</h3>
+              <ol start={gi * 3 + 1}>
+                {items.map(([title, problem, fix]) => (
+                  <li key={title}><strong>{title}</strong> {problem}<span className="fix"><b>Fix:</b> {fix}</span></li>
+                ))}
+              </ol>
+            </div>
+          ))}
+        </div>
       </div>
 
       <div className="card">
