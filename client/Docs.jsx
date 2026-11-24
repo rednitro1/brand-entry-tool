@@ -304,8 +304,9 @@ export function AppendixPage() {
         <div className="appx-head"><span className="appx-num">1</span><h2>The 10-hour version</h2></div>
         <div className="appx-points">
           <div>
-            <h3>Real PDF and Loom assets</h3>
-            <p>Today the DMs carry placeholders. The 10-hour version makes the actual PDF and a Loom script for each account.</p>
+            <h3>Real PDF and Loom assets, built from Nectar's own data</h3>
+            <p>Today the DMs carry placeholders. In the ideal version, this platform is hooked up to Nectar's internal resources and pulls from them automatically: how we've worked with companies in every space, and the growth metrics we can attribute to them being on Nectar.</p>
+            <p>The PDF then generates itself from a template, matched to the account's industry with the right case studies and numbers, and the Loom script comes from the same data. Personalization at scale.</p>
           </div>
           <div>
             <h3>Comment and engagement data on every post</h3>
