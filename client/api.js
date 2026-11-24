@@ -14,4 +14,5 @@ export const api = {
 api.runs = () => call('/api/runs');
 api.playbook = () => call('/api/playbook');
 api.savePlaybook = (content, accessCode, note) => call('/api/playbook', { method: 'POST', body: JSON.stringify({ content, note }), headers: { 'x-access-code': accessCode } });
+api.getDraft = (id) => call(`/api/drafts/${id}`);
 api.draft = (slug, pickUrls, accessCode) => call(`/api/brands/${encodeURIComponent(slug)}/engagement`, { method: 'POST', body: JSON.stringify({ pickUrls }), headers: { 'x-access-code': accessCode } });

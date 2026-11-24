@@ -133,14 +133,18 @@ export function makeDb(url, key) {
     async createDraft({ brandId, model, picks = [], playbookId = null }) {
       return must(await sb.from('strategies').insert({ brand_id: brandId, model, output: {}, status: 'running', picks, playbook_id: playbookId }).select('id,status,created_at').single(), 'createDraft');
     },
-    async finishDraft(id, { status, output = {}, picks = [], rejected = [], costUsd = 0, inputTokens = null, outputTokens = null, error = null }) {
+    /* Live log + progress while a draft runs (written at most once a second). */
+    async updateDraft(id, { log, progress }) {
+      must(await sb.from('strategies').update({ log, progress }).eq('id', id).eq('status', 'running'), 'updateDraft');
+    },
+    async finishDraft(id, { status, output = {}, picks = [], rejected = [], costUsd = 0, inputTokens = null, outputTokens = null, error = null, log = undefined }) {
       must(await sb.from('strategies').update({
         status, output, picks, rejected_claims: rejected, cost_usd: costUsd, input_tokens: inputTokens, output_tokens: outputTokens,
-        error, finished_at: new Date().toISOString(),
+        error, finished_at: new Date().toISOString(), progress: 1, ...(log ? { log } : {}),
       }).eq('id', id), 'finishDraft');
     },
     async getDraft(id) {
-      return must(await sb.from('strategies').select('id,brand_id,status,model,output,picks,rejected_claims,cost_usd,error,created_at,finished_at').eq('id', id).maybeSingle(), 'getDraft');
+      return must(await sb.from('strategies').select('id,brand_id,status,model,output,picks,rejected_claims,cost_usd,error,created_at,finished_at,log,progress').eq('id', id).maybeSingle(), 'getDraft');
     },
 
     async saveSocialAccount(brandId, a) {
@@ -165,7 +169,7 @@ export function makeDb(url, key) {
       const brandPosts = li
         ? must(await sb.from('social_posts').select('id,url,caption,posted_at,likes,comments,is_repost,author').eq('social_account_id', li.id).order('posted_at', { ascending: false }).limit(100), 'bundle brand posts')
         : [];
-      const draft = must(await sb.from('strategies').select('id,status,model,output,picks,rejected_claims,cost_usd,error,created_at,finished_at').eq('brand_id', brand.id).order('created_at', { ascending: false }).limit(1).maybeSingle(), 'bundle draft');
+      const draft = must(await sb.from('strategies').select('id,status,model,output,picks,rejected_claims,cost_usd,error,created_at,finished_at,log,progress').eq('brand_id', brand.id).order('created_at', { ascending: false }).limit(1).maybeSingle(), 'bundle draft');
       const lastRun = must(await sb.from('runs').select('id,status,cost_usd,started_at,finished_at,created_at').eq('brand_id', brand.id).order('created_at', { ascending: false }).limit(1).maybeSingle(), 'bundle run');
       return { brand, profile, stakeholders, social, lastRun, brandPosts, draft };
     },

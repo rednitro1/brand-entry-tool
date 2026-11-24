@@ -45,7 +45,7 @@ export function scrubLine(msg) {
 /* A module's live logger: say(msg) adds a line, say.progress(0..1) moves the module's bar.
    Both are written to run_modules at most once a second while the module runs, so a
    viewer polling the run sees lines as they happen. Progress only moves forward. */
-export function makeLiveLog({ db, runId, name, flushMs = FLUSH_MS, now = () => new Date() }) {
+export function makeLiveLog({ db, runId, name, flushMs = FLUSH_MS, now = () => new Date(), write = (patch) => db.updateModule(runId, name, patch) }) {
   const lines = [];
   let progress = 0;
   let timer = null;
@@ -53,7 +53,7 @@ export function makeLiveLog({ db, runId, name, flushMs = FLUSH_MS, now = () => n
   const flush = () => {
     timer = null;
     const patch = { log: lines.slice(), progress };
-    inflight = inflight.then(() => db.updateModule(runId, name, patch)).catch(() => {}); // a missed flush only delays lines
+    inflight = inflight.then(() => write(patch)).catch(() => {}); // a missed flush only delays lines
     return inflight;
   };
   const schedule = () => { if (!timer) timer = setTimeout(flush, flushMs); };

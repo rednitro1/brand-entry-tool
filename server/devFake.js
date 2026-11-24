@@ -64,7 +64,7 @@ export function makeFakeDraftClaude() {
   return {
     async structured({ system, user }) {
       await jitter(2500, 4500);
-      if (/choose which recent posts/.test(system)) {
+      if (/choose which (recent )?posts/.test(system)) {
         const ids = [...new Set(user.match(/\[post:\d+\]/g) || [])].map((x) => x.slice(1, -1));
         return { parsed: { picks: ids.slice(0, 3).map((id) => ({ post_id: id, reason: 'FAKE MODE: first candidate in rank order.' })) } };
       }
@@ -149,8 +149,9 @@ export function makeMemDb() {
     },
     async getPlaybook() { return t.playbooks.at(-1) || null; },
     async savePlaybook(content, note) { const row = { id: id(), content, note, created_at: now() }; t.playbooks.push(row); return row; },
-    async createDraft({ brandId, model, picks = [], playbookId = null }) { const row = { id: id(), brand_id: brandId, model, status: 'running', output: {}, picks, rejected_claims: [], cost_usd: 0, playbook_id: playbookId, created_at: now(), finished_at: null, error: null }; t.drafts.push(row); return row; },
-    async finishDraft(draftId, { status, output = {}, picks = [], rejected = [], costUsd = 0, error = null }) { Object.assign(t.drafts.find((x) => x.id === draftId), { status, output, picks, rejected_claims: rejected, cost_usd: costUsd, error, finished_at: now() }); },
+    async createDraft({ brandId, model, picks = [], playbookId = null }) { const row = { id: id(), brand_id: brandId, model, status: 'running', output: {}, picks, rejected_claims: [], cost_usd: 0, playbook_id: playbookId, created_at: now(), finished_at: null, error: null, log: [], progress: 0 }; t.drafts.push(row); return row; },
+    async updateDraft(draftId, { log, progress }) { const d = t.drafts.find((x) => x.id === draftId); if (d && d.status === 'running') Object.assign(d, { log, progress }); },
+    async finishDraft(draftId, { status, output = {}, picks = [], rejected = [], costUsd = 0, error = null, log }) { Object.assign(t.drafts.find((x) => x.id === draftId), { status, output, picks, rejected_claims: rejected, cost_usd: costUsd, error, finished_at: now(), progress: 1, ...(log ? { log } : {}) }); },
     async getDraft(draftId) { return t.drafts.find((x) => x.id === draftId) || null; },
     async failOrphanedRuns() {},
     async saveProfile(brandId, runId, p) { t.profiles.push({ id: id(), brand_id: brandId, run_id: runId, created_at: now(), ...p }); },

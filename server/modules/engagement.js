@@ -452,8 +452,21 @@ EVIDENCE: every item lists the evidence ids it relies on (post:, fact:, stat:, p
 /* bundle: getBrandBundle output. pickUrls: Ben's chosen post URLs (0..3; the AI fills the
    rest). Always returns a plan: with fewer posts it comments on fewer, with none it still
    drafts the own post, connection notes and the DM. */
+/* While one long model call runs, ease the progress bar toward `to` so it never looks
+   frozen; the real value jumps ahead as soon as the call returns. */
+function creep(log, from, to, everyMs = 1500) {
+  if (!log.progress) return () => {};
+  let p = from;
+  log.progress(p);
+  const t = setInterval(() => { p += (to - p) * 0.07; log.progress(p); }, everyMs);
+  return () => clearInterval(t);
+}
+
 export async function draftEngagement({ bundle, playbook, claude, pickUrls = [], log = () => {}, now = new Date() }) {
+  const progress = (v) => log.progress?.(v);
   const all = collectPosts(bundle);
+  const people = (bundle.stakeholders || []).filter((s) => (s.stakeholder_posts || []).length).length;
+  log(`Reading ${all.length} LinkedIn post${all.length === 1 ? '' : 's'} from ${people} ${people === 1 ? 'person' : 'people'}${(bundle.brandPosts || []).length ? ` and the ${bundle.brand.name} page` : ''}`);
   const pool = buildPool(all, now);
   const forced = pickUrls.map((u) => all.find((p) => p.url === u)).filter(Boolean)
     .map((p) => ({ ...p, age_days: Math.round((now - new Date(p.posted_at)) / 864e5), older: (now - new Date(p.posted_at)) / 864e5 >= 90 }));
@@ -463,7 +476,8 @@ export async function draftEngagement({ bundle, playbook, claude, pickUrls = [],
   const evidence = buildEvidence({ bundle, candidates, playbook });
   const idOf = (url) => Object.entries(evidence).find(([, v]) => v.kind === 'post' && v.url === url)?.[0];
   const want = Math.min(3, candidates.length);
-  log(`${candidates.length} candidate posts (${candidates.filter((p) => p.older).length} older than 3 months); picking ${want}`);
+  log(`${candidates.length} candidate posts (${candidates.filter((p) => p.older).length} older than 3 months); picking ${want}${forced.length ? `, ${Math.min(forced.length, 3)} chosen by you` : ''}`);
+  progress(0.1);
 
   // Step 1: picks. Ben's swaps first; if what's left fits, take it all (no model call);
   // otherwise Claude chooses, and anything invalid is filled from the ranked order.
@@ -481,10 +495,12 @@ export async function draftEngagement({ bundle, playbook, claude, pickUrls = [],
     const restEv = Object.fromEntries(Object.entries(evidence).filter(([, v]) => v.kind === 'post' && rest.some((p) => p.url === v.url)));
     const user = `Target brand: ${bundle.brand.name}\n\nCANDIDATE POSTS:\n\n${evidenceLines(restEv, ['post'])}\n\nPick exactly ${need} post${need === 1 ? '' : 's'}.`;
     let chosen = [];
+    log(`Asking Claude to pick the best ${need} of ${rest.length} posts to comment on`);
+    const stop = creep(log, 0.12, 0.26);
     try {
       const { parsed } = await claude.structured({ system: PICK_SYSTEM, user, schema: PickSchema, effort: 'low', maxTokens: 4000 });
       chosen = parsed.picks.filter((p, i, arr) => restEv[p.post_id] && arr.findIndex((x) => x.post_id === p.post_id) === i).slice(0, need);
-    } catch (err) { log(`Pick step failed (${err.message}); using the ranked order`); }
+    } catch (err) { log(`Pick step failed (${err.message}); using the ranked order`); } finally { stop(); }
     picks.push(...chosen.map((p) => ({ ...p, by: 'ai' })));
     for (const p of rest) {
       if (picks.length >= want) break;
@@ -495,6 +511,7 @@ export async function draftEngagement({ bundle, playbook, claude, pickUrls = [],
   const pickIds = picks.map((p) => p.post_id);
   const pickedPosts = pickIds.map((id) => evidence[id].post);
   log(pickIds.length ? `Picked: ${pickIds.map((id) => evidence[id].label).join(' | ')}` : 'No posts with text in the past year; drafting outreach without comments');
+  progress(0.28);
 
   // Who to reach: wedge persona (connect + DM) and bridges (connect).
   const outreach = chooseTemplates(assignTracks(bundle.stakeholders, planOutreach(bundle.stakeholders, pickedPosts)), playbook.tracks, { hasPosts: pickedPosts.length > 0 });
@@ -502,6 +519,8 @@ export async function draftEngagement({ bundle, playbook, claude, pickUrls = [],
   const outreachIds = outreach.map((o) => personId(o.person));
   const sequence = buildSequence({ brandName: bundle.brand.name, pickedPosts, outreach });
   log(`Outreach: ${outreach.map((o) => `${o.person.full_name} (${o.role}, ${o.track.toUpperCase()})`).join(', ')}`);
+  for (const o of outreach) log(`${o.person.full_name}: ${o.track === 'pdf' ? 'PDF' : 'Loom'} track (${o.track_reason || o.role})`);
+  progress(0.32);
   const templatesById = Object.fromEntries(outreach.map((o, i) => [outreachIds[i], o.templates]));
 
   // Step 2: drafts, validated, with one retry that feeds the problems back.
@@ -539,16 +558,23 @@ ${evidenceLines(evidence, ['proof'])}`;
 
   const system = DRAFT_SYSTEM(playbook);
   const checks = { evidence, playbook, brandName: bundle.brand.name, picks: pickIds, outreach: outreachIds, templates: templatesById };
-  log(`Drafting ${pickIds.length} comment${pickIds.length === 1 ? '' : 's'}, your post, and a connection request + first DM for ${outreach.length} ${outreach.length === 1 ? 'person' : 'people'}`);
-  let { parsed: draft } = await claude.structured({ system, user: brief, schema: DraftSchema, effort: 'medium', maxTokens: 12000 });
+  log(`Writing ${pickIds.length} comment${pickIds.length === 1 ? '' : 's'}, your post, and a connection request + first DM for ${outreach.length} ${outreach.length === 1 ? 'person' : 'people'}`);
+  let stop = creep(log, 0.34, 0.8);
+  let draft;
+  try { ({ parsed: draft } = await claude.structured({ system, user: brief, schema: DraftSchema, effort: 'medium', maxTokens: 12000 })); } finally { stop(); }
+  progress(0.82);
+  log('Checking every number, source, character limit and banned phrase');
   let { problems } = validateDraft(draft, checks);
   if (problems.length) {
     log(`First draft had ${problems.length} problem(s), redrafting once`);
+    for (const p of problems.slice(0, 4)) log(`Flagged: ${p.where}: ${p.issue}`);
     const retry = `${brief}\n\nYOUR PREVIOUS DRAFT:\n${JSON.stringify(draft)}\n\nIT FAILED THESE CHECKS. Fix every one and keep everything else:\n${problems.map((p) => `- ${p.where}: ${p.issue}`).join('\n')}`;
-    ({ parsed: draft } = await claude.structured({ system, user: retry, schema: DraftSchema, effort: 'medium', maxTokens: 12000 }));
+    stop = creep(log, 0.84, 0.97);
+    try { ({ parsed: draft } = await claude.structured({ system, user: retry, schema: DraftSchema, effort: 'medium', maxTokens: 12000 })); } finally { stop(); }
     ({ problems } = validateDraft(draft, checks));
   }
-  log(problems.length ? `Done with ${problems.length} flagged problem(s)` : 'Done, all checks passed');
+  progress(0.98);
+  log(problems.length ? `Done with ${problems.length} flagged problem(s), shown under "Check before using"` : 'Done, all checks passed');
 
   // Needs proof when none of the cited results is from the category the post leans on.
   // Needs proof only when the post leans on customer numbers from another category

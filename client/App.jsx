@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { api } from './api.js';
-import { overallProgress, mergeLogs } from '../shared/progress.js';
+import { overallProgress, mergeLogs, parseLine } from '../shared/progress.js';
 import { detectIndustry, rankCaseStudies, companyWide } from '../shared/caseStudies.js';
 import { StackPage, AppendixPage } from './Docs.jsx';
 import { buildSignals } from '../shared/signals.js';
@@ -772,8 +772,11 @@ function EngagementPlan({ b, slug, go, picking, selected, startPicking, stopPick
         <span className="muted small">Copy only. Nothing is posted, sent or connected for you.</span>
       </div>
 
-      {running && (
-        <div className="banner"><span className="spinner" aria-hidden="true" /><span>Drafting comments, your post, the connection request and the first DM. Usually under a minute; you can leave this page.</span></div>
+      {(running || d?.status === 'failed') && (
+        <>
+          <DraftConsole initial={d} brandName={b.brand.name} onFinished={onStarted} />
+          {running && <p className="muted small">Usually under a minute. You can leave this page; the draft keeps going.</p>}
+        </>
       )}
       {d?.status === 'failed' && <p className="error">The draft failed: {d.error}</p>}
       {err && <p className="error">{err}</p>}
@@ -872,9 +875,98 @@ function EngagementPlan({ b, slug, go, picking, selected, startPicking, stopPick
 
           {o.notes_for_ben && <p className="note-line"><strong>Notes:</strong> {o.notes_for_ben}</p>}
           <p className="muted small">Drafted {day(d.finished_at)} with {d.model} · {usd(d.cost_usd)}</p>
+          {(d.log || []).length > 0 && (
+            <details className="draft-log">
+              <summary>Show the draft log</summary>
+              <DraftConsole initial={d} brandName={b.brand.name} compact />
+            </details>
+          )}
         </>
       )}
       {!picking && controls}
+    </div>
+  );
+}
+
+/* ------------------------------- draft console ------------------------------ */
+
+/* The same console + progress bar as a research run, for an engagement draft. Polls the
+   draft row (log + progress) every 1.5s while it runs, then hands back to the page. */
+const DRAFT_STEPS = [['Read posts', 0.1], ['Pick posts', 0.28], ['Plan outreach', 0.32], ['Write copy', 0.82], ['Check', 0.98]];
+const draftTag = (t) => (/^(Loading|Playbook)/.test(t) ? 'setup'
+  : /^(Reading|\d+ candidate)/.test(t) ? 'posts'
+    : /pick|Picked/i.test(t) ? 'pick'
+      : /^Outreach|track \(/.test(t) ? 'people'
+        : /^Writing/.test(t) ? 'write'
+          : /^Cost/.test(t) ? 'cost'
+            : 'check');
+
+function DraftConsole({ initial, brandName, onFinished, compact }) {
+  const [d, setD] = useState(initial);
+  const running = d?.status === 'running';
+  const told = React.useRef(false);
+  const box = React.useRef(null);
+  const pinned = React.useRef(true);
+  const [now, setNow] = useState(Date.now());
+
+  useEffect(() => { setD(initial); }, [initial?.id, initial?.status]);
+  useEffect(() => {
+    if (!running || !d?.id) return undefined;
+    let stop = false; let timer = null;
+    const tick = () => api.getDraft(d.id).then((x) => {
+      if (stop) return;
+      setD(x);
+      if (x.status === 'running') timer = setTimeout(tick, 1500);
+      else if (!told.current) { told.current = true; setTimeout(() => onFinished?.(), 900); }
+    }).catch(() => { if (!stop) timer = setTimeout(tick, 3000); });
+    timer = setTimeout(tick, 800);
+    const clockT = setInterval(() => setNow(Date.now()), 1000);
+    return () => { stop = true; clearTimeout(timer); clearInterval(clockT); };
+  }, [d?.id, running]);
+
+  const lines = (d?.log || []).map(parseLine);
+  React.useLayoutEffect(() => { if (box.current && pinned.current) box.current.scrollTop = box.current.scrollHeight; }, [lines.length]);
+  const onScroll = () => { const b = box.current; if (b) pinned.current = b.scrollHeight - b.scrollTop - b.clientHeight < 24; };
+
+  const started = d?.created_at ? new Date(d.created_at).getTime() : null;
+  const end = d?.finished_at ? new Date(d.finished_at).getTime() : now;
+  const elapsed = started ? Math.max(0, Math.round((end - started) / 1000)) : 0;
+  const prog = d?.status === 'done' ? 1 : Math.max(0, Math.min(0.99, Number(d?.progress) || 0));
+  const pct = Math.round(prog * 100);
+  const failed = d?.status === 'failed';
+  const firstOpen = DRAFT_STEPS.findIndex(([, at]) => prog < at);
+  const label = failed ? 'Draft failed' : !running ? 'Finished' : DRAFT_STEPS[firstOpen]?.[0] || 'Finishing';
+
+  return (
+    <div className={`console-wrap draft-console${failed ? ' is-failed' : !running ? ' is-done' : ''}${compact ? ' compact' : ''}`}>
+      <div className="console-head">
+        <p className="progress-title">{failed ? 'Could not draft for' : running ? 'Drafting the engagement plan for' : 'Drafted the engagement plan for'} <strong>{brandName}</strong></p>
+        <span className="elapsed" aria-label="Elapsed time">{clock(elapsed)}</span>
+      </div>
+      <div className="meter" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={pct} aria-label="Draft progress">
+        <i style={{ width: `${pct}%` }} />
+      </div>
+      <div className="meter-row"><span>{label}</span><strong>{pct}%</strong></div>
+      <ol className="chips">
+        {DRAFT_STEPS.map(([name, at], i) => {
+          const st = prog >= at || d?.status === 'done' ? 'done' : failed && i === firstOpen ? 'failed' : running && i === firstOpen ? 'running' : 'queued';
+          return <li key={name} className={`chip st-${st}`}><span className="dot">{st === 'done' ? <IconCheck /> : st === 'failed' ? '!' : ''}</span>{name}</li>;
+        })}
+      </ol>
+      <div className="console" ref={box} onScroll={onScroll} role="log" aria-live="polite" aria-label="Draft log">
+        {lines.length === 0 && <div className="line muted">{running ? 'Waiting for the server…' : 'No log was saved for this draft (drafted before logs existed).'}</div>}
+        {lines.map((l, i) => {
+          const tag = draftTag(l.text);
+          return (
+            <div key={i} className={`line${/failed|Stopped|Flagged|problem/i.test(l.text) ? ' warn' : ''}`}>
+              <span className="t">{l.at && started ? clock(Math.max(0, Math.round((new Date(l.at) - started) / 1000))) : ''}</span>
+              <span className={`tag d-${tag}`}>{tag}</span>
+              <span className="msg">{l.text}</span>
+            </div>
+          );
+        })}
+        {running && <div className="line cursor"><span className="t" /><span className="tag" /><span className="msg">▍</span></div>}
+      </div>
     </div>
   );
 }
