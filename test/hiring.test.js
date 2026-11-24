@@ -16,6 +16,7 @@ test('isHiringPost: job announcements yes, team shout-outs no', () => {
 
 test("commentStyleProblems: Ben's hiring comment passes on a hiring post, not on a normal one", () => {
   assert.deepEqual(commentStyleProblems(BEN, { hiring: true }), []);
+  assert.deepEqual(commentStyleProblems("Chronically online as a job requirement is the most honest line I've seen in a job post.", { hiring: true }), []);
   assert.match(commentStyleProblems(BEN).join(' '), /2 sentences/);
   assert.match(commentStyleProblems('One. Two. Three.', { hiring: true }).join(' '), /3 sentences/);
 });
