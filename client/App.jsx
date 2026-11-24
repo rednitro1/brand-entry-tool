@@ -18,6 +18,7 @@ const STEPS = [
   ['social', 'Social pages'],
 ];
 const PLATFORMS = [['instagram', 'Instagram'], ['tiktok', 'TikTok'], ['x', 'X'], ['linkedin', 'LinkedIn']];
+const ACCOUNT_TABS = [['overview', 'Overview'], ['people', 'People'], ['plan', 'Plan'], ['receipts', 'Receipts']];
 
 const fmt = (n) => (n === null || n === undefined ? '—' : Number(n).toLocaleString('en-US'));
 const compact = (n) => (n === null || n === undefined ? '—' : Intl.NumberFormat('en-US', { notation: 'compact', maximumFractionDigits: 1 }).format(n));
@@ -38,14 +39,14 @@ function currentRoute() {
   const legacy = new URLSearchParams(window.location.search).get('brand');
   if (legacy) return { page: 'account', slug: legacy };
   const parts = window.location.pathname.split('/').filter(Boolean);
-  if (parts[0] === 'accounts' && parts[1]) return { page: 'account', slug: decodeURIComponent(parts[1]) };
+  if (parts[0] === 'accounts' && parts[1]) return { page: 'account', slug: decodeURIComponent(parts[1]), tab: ACCOUNT_TABS.some(([k]) => k === parts[2]) ? parts[2] : 'overview' };
   if (parts[0] === 'accounts') return { page: 'accounts' };
   if (parts[0] === 'spend') return { page: 'spend' };
   if (parts[0] === 'playbook') return { page: 'playbook' };
   return { page: 'search' };
 }
 function pathFor(r) {
-  if (r.page === 'account') return `/accounts/${encodeURIComponent(r.slug)}`;
+  if (r.page === 'account') return `/accounts/${encodeURIComponent(r.slug)}${r.tab && r.tab !== 'overview' ? `/${r.tab}` : ''}`;
   if (r.page === 'accounts') return '/accounts';
   if (r.page === 'spend') return '/spend';
   if (r.page === 'playbook') return '/playbook';
@@ -74,7 +75,7 @@ export default function App() {
       <main className="content">
         {route.page === 'search' && <SearchPage go={go} live={live} />}
         {route.page === 'accounts' && <AccountsPage go={go} live={live} />}
-        {route.page === 'account' && <AccountPage slug={route.slug} go={go} live={live} />}
+        {route.page === 'account' && <AccountPage slug={route.slug} tab={route.tab || 'overview'} go={go} live={live} />}
         {route.page === 'spend' && <SpendPage go={go} live={live} />}
         {route.page === 'playbook' && <PlaybookPage />}
       </main>
@@ -367,7 +368,7 @@ function AccountsPage({ go, live }) {
   );
 }
 
-function AccountPage({ slug, go, live }) {
+function AccountPage({ slug, tab, go, live }) {
   const [kick, setKick] = useState(0); // bumped after starting a draft so polling restarts
   const { data: b, err } = useLiveData(() => api.brand(slug), [slug, live.finished, kick],
     (d) => ['running', 'queued'].includes(d?.lastRun?.status) || d?.draft?.status === 'running');
@@ -383,6 +384,29 @@ function AccountPage({ slug, go, live }) {
   const wedge = stakeholders.filter((s) => WEDGE.includes(s.persona)).sort((a, c) => WEDGE.indexOf(a.persona) - WEDGE.indexOf(c.persona));
   const team = stakeholders.filter((s) => !WEDGE.includes(s.persona));
   const gaps = brand.gaps || [];
+  const setTab = (t) => go({ page: 'account', slug, tab: t });
+
+  // The numbers strip: the account at a glance, each one opens the tab it comes from.
+  const counted = social.filter((a) => a.followers !== null && a.followers !== undefined);
+  const followers = counted.reduce((n, a) => n + Number(a.followers), 0);
+  const recentPosts = allPosts(b).filter((p) => within90(p.posted_at)).length;
+  const d = b.draft;
+  const flags = d?.status === 'done' ? (d.output?.problems || []).length : 0;
+  const planText = d?.status === 'running' ? 'Drafting…' : d?.status === 'failed' ? 'Draft failed' : d?.status === 'done' ? (flags ? `Ready · ${flags} to check` : 'Ready') : 'Not drafted';
+  const strip = [
+    { tab: 'overview', value: counted.length ? compact(followers) : '—', label: 'followers' },
+    { tab: 'overview', value: counted.length, label: counted.length ? PLATFORMS.filter(([k]) => counted.some((a) => a.platform === k)).map(([, l]) => l).join(', ') : 'platforms' },
+    { tab: 'people', value: stakeholders.length, label: `people · ${wedge.length}/${WEDGE.length} wedge roles` },
+    { tab: 'people', value: recentPosts, label: 'posts, last 3 months' },
+    { tab: 'plan', value: planText, label: 'engagement plan', state: d?.status === 'done' ? (flags ? 'warn' : 'ok') : d?.status === 'failed' ? 'bad' : '' },
+  ];
+  const badge = { people: stakeholders.length, plan: d?.status === 'done' ? (flags ? '!' : '✓') : d?.status === 'running' ? '…' : '', receipts: facts.length };
+
+  // Choosing posts happens in the Plan tab, with the feed right under the redraft buttons.
+  const picker = (
+    <LinkedInActivity b={b} picking={picking} selected={selected}
+      onToggle={(url) => setSelected((cur) => (cur.includes(url) ? cur.filter((u) => u !== url) : cur.length >= 3 ? cur : [...cur, url]))} />
+  );
 
   return (
     <section className="page">
@@ -396,6 +420,14 @@ function AccountPage({ slug, go, live }) {
         {profile && <OwnershipLine own={profile.ownership} reporting={profile.reporting} factById={factById} />}
       </header>
 
+      <div className="strip">
+        {strip.map((x, i) => (
+          <button key={i} className={`stripcell${x.state ? ` is-${x.state}` : ''}`} onClick={() => setTab(x.tab)}>
+            <strong>{x.value}</strong><span title={x.label}>{x.label}</span>
+          </button>
+        ))}
+      </div>
+
       {['running', 'queued'].includes(lastRun?.status) && (
         <div className="banner">
           <span className="spinner" aria-hidden="true" />
@@ -404,99 +436,122 @@ function AccountPage({ slug, go, live }) {
         </div>
       )}
 
-      {profile && (profile.summary || []).length > 0 && (
-        <div className="card">
-          <h2>Summary</h2>
-          <Summary points={profile.summary} factById={factById} />
-        </div>
+      <nav className="tabs" role="tablist" aria-label="Account sections">
+        {ACCOUNT_TABS.map(([k, label]) => (
+          <a key={k} role="tab" aria-selected={tab === k} className={`tabbtn${tab === k ? ' on' : ''}`} href={pathFor({ page: 'account', slug, tab: k })}
+            onClick={(e) => { e.preventDefault(); setTab(k); }}>
+            {label}{badge[k] !== undefined && badge[k] !== '' && <span className="tabcount">{badge[k]}</span>}
+          </a>
+        ))}
+      </nav>
+
+      {tab === 'overview' && (
+        <>
+          {profile && (profile.summary || []).length > 0 && (
+            <div className="card">
+              <h2>Summary</h2>
+              <Summary points={profile.summary} factById={factById} />
+            </div>
+          )}
+          <div className="card">
+            <h2>Social pages</h2>
+            <div className="socials">
+              {PLATFORMS.map(([key, label]) => {
+                const a = social.find((x) => x.platform === key);
+                return (
+                  <div key={key} className="social">
+                    <div className="social-head">
+                      <span>{label}</span>
+                      {a?.url && <a href={a.url} target="_blank" rel="noreferrer">@{a.handle}</a>}
+                    </div>
+                    <div className="stat"><strong>{compact(a?.followers)}</strong><span>followers</span></div>
+                    <div className="sub">
+                      {key === 'linkedin'
+                        ? <span>{a?.extra?.employees ? `${fmt(a.extra.employees)} employees` : ''}</span>
+                        : <span>{fmt(a?.following)} following</span>}
+                      {key !== 'linkedin' && <span>{a?.post_count === null || a?.post_count === undefined ? '— posts' : `${fmt(a.post_count)} posts`}</span>}
+                    </div>
+                    {(a?.error || a?.extra?.restricted) && (
+                      <p className="note">{a.error || 'Age-restricted account: posts are not visible to public scrapers.'}</p>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+          <CaseStudies b={b} go={go} />
+        </>
       )}
 
-      <CaseStudies b={b} go={go} />
+      {tab === 'people' && (
+        <>
+          <div className="card">
+            <h2>Stakeholders</h2>
+            <div className="scroll">
+              <table className="people">
+                <thead><tr><th>Name</th><th>Title</th><th>Persona</th><th>Tenure</th><th>LinkedIn activity</th></tr></thead>
+                <tbody>
+                  {wedge.map((s) => <PersonRow key={s.id} s={s} wedge />)}
+                  {gaps.map((g) => (
+                    <tr key={g.persona} className="gap">
+                      <td colSpan={3}>No {PERSONA_TEXT[g.persona]} found</td>
+                      <td colSpan={2} className="muted small">Not in Apollo or Prospeo</td>
+                    </tr>
+                  ))}
+                  {team.length > 0 && <tr className="divider"><td colSpan={5}>Social and community team</td></tr>}
+                  {team.map((s) => <PersonRow key={s.id} s={s} />)}
+                </tbody>
+              </table>
+            </div>
+          </div>
+          {!picking && picker}
+        </>
+      )}
 
-      <div className="card">
-        <h2>Stakeholders</h2>
-        <div className="scroll">
-          <table className="people">
-            <thead><tr><th>Name</th><th>Title</th><th>Persona</th><th>Tenure</th><th>LinkedIn activity</th></tr></thead>
-            <tbody>
-              {wedge.map((s) => <PersonRow key={s.id} s={s} wedge />)}
-              {gaps.map((g) => (
-                <tr key={g.persona} className="gap">
-                  <td colSpan={3}>No {PERSONA_TEXT[g.persona]} found</td>
-                  <td colSpan={2} className="muted small">Not in Apollo or Prospeo</td>
-                </tr>
+      {tab === 'plan' && (
+        <>
+          <EngagementPlan b={b} slug={slug} go={go} picking={picking} selected={selected}
+            startPicking={() => { setSelected((b.draft?.picks || b.draft?.output?.picks || []).map((p) => p.url)); setPicking(true); window.scrollTo(0, 0); }}
+            stopPicking={() => setPicking(false)}
+            onStarted={() => { setPicking(false); setKick((k) => k + 1); }} />
+          {picking && picker}
+        </>
+      )}
+
+      {tab === 'receipts' && (
+        profile ? (
+          <div className="card receipts">
+            <div className="card-head">
+              <h2>Facts and receipts</h2>
+              <span className="muted small">{facts.length} facts{(profile.conflicts || []).length ? `, ${profile.conflicts.length} disagreements` : ''}</span>
+            </div>
+            <p className="muted small">Each fact quotes the page it came from. Claims without a matching quote are dropped, not shown as facts.</p>
+            <ol className="facts">
+              {facts.map((f) => (
+                <li key={f.id} id={`fact-${f.id}`}>
+                  <span className="fid">{f.id}</span> {f.claim} <Label value={f.label} />
+                  <blockquote>“{f.quote}” <a href={f.url} target="_blank" rel="noreferrer">{hostname(f.url)}</a>{f.date ? ` · ${f.date}` : ''}</blockquote>
+                </li>
               ))}
-              {team.length > 0 && <tr className="divider"><td colSpan={5}>Social and community team</td></tr>}
-              {team.map((s) => <PersonRow key={s.id} s={s} />)}
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      <LinkedInActivity b={b} picking={picking} selected={selected}
-        onToggle={(url) => setSelected((cur) => (cur.includes(url) ? cur.filter((u) => u !== url) : cur.length >= 3 ? cur : [...cur, url]))} />
-
-      <EngagementPlan b={b} slug={slug} go={go} picking={picking} selected={selected}
-        startPicking={() => { setSelected((b.draft?.picks || []).map((p) => p.url)); setPicking(true); }}
-        stopPicking={() => setPicking(false)}
-        onStarted={() => { setPicking(false); setKick((k) => k + 1); }} />
-
-      <div className="card">
-        <h2>Social pages</h2>
-        <div className="socials">
-          {PLATFORMS.map(([key, label]) => {
-            const a = social.find((x) => x.platform === key);
-            return (
-              <div key={key} className="social">
-                <div className="social-head">
-                  <span>{label}</span>
-                  {a?.url && <a href={a.url} target="_blank" rel="noreferrer">@{a.handle}</a>}
-                </div>
-                <div className="stat"><strong>{compact(a?.followers)}</strong><span>followers</span></div>
-                <div className="sub">
-                  {key === 'linkedin'
-                    ? <span>{a?.extra?.employees ? `${fmt(a.extra.employees)} employees` : ''}</span>
-                    : <span>{fmt(a?.following)} following</span>}
-                  {key !== 'linkedin' && <span>{a?.post_count === null || a?.post_count === undefined ? '— posts' : `${fmt(a.post_count)} posts`}</span>}
-                </div>
-                {(a?.error || a?.extra?.restricted) && (
-                  <p className="note">{a.error || 'Age-restricted account: posts are not visible to public scrapers.'}</p>
-                )}
-              </div>
-            );
-          })}
-        </div>
-      </div>
-
-      {profile && (
-        <details className="card receipts">
-          <summary><h2>Facts and receipts</h2><span className="muted small">{facts.length} facts{(profile.conflicts || []).length ? `, ${profile.conflicts.length} disagreements` : ''}</span></summary>
-          <p className="muted small">Each fact quotes the page it came from. Claims without a matching quote are dropped, not shown as facts.</p>
-          <ol className="facts">
-            {facts.map((f) => (
-              <li key={f.id} id={`fact-${f.id}`}>
-                <span className="fid">{f.id}</span> {f.claim} <Label value={f.label} />
-                <blockquote>“{f.quote}” <a href={f.url} target="_blank" rel="noreferrer">{hostname(f.url)}</a>{f.date ? ` · ${f.date}` : ''}</blockquote>
-              </li>
-            ))}
-          </ol>
-          {(profile.conflicts || []).length > 0 && (
-            <>
-              <h3>Sources disagree</h3>
-              <ul className="conflicts">
-                {profile.conflicts.map((c, i) => (
-                  <li key={i}><strong>{c.topic}.</strong> {c.sources.map((s, j) => <span key={j}>{j ? ' vs ' : ''}<a href={s.url} target="_blank" rel="noreferrer">{hostname(s.url)}</a>: “{s.says}”</span>)}. <em>{c.resolution}</em></li>
-                ))}
-              </ul>
-            </>
-          )}
-          {(profile.rejected || []).length > 0 && (
-            <>
-              <h3>Dropped for missing receipts</h3>
-              <ul>{profile.rejected.map((r, i) => <li key={i}>{r.claim} <span className="muted">({r.reason})</span></li>)}</ul>
-            </>
-          )}
-        </details>
+            </ol>
+            {(profile.conflicts || []).length > 0 && (
+              <>
+                <h3>Sources disagree</h3>
+                <ul className="conflicts">
+                  {profile.conflicts.map((c, i) => (
+                    <li key={i}><strong>{c.topic}.</strong> {c.sources.map((s, j) => <span key={j}>{j ? ' vs ' : ''}<a href={s.url} target="_blank" rel="noreferrer">{hostname(s.url)}</a>: “{s.says}”</span>)}. <em>{c.resolution}</em></li>
+                  ))}
+                </ul>
+              </>
+            )}
+            {(profile.rejected || []).length > 0 && (
+              <>
+                <h3>Dropped for missing receipts</h3>
+                <ul>{profile.rejected.map((r, i) => <li key={i}>{r.claim} <span className="muted">({r.reason})</span></li>)}</ul>
+              </>
+            )}
+          </div>
+        ) : <div className="card"><p className="muted">No brand profile yet.</p></div>
       )}
     </section>
   );
@@ -575,7 +630,7 @@ function LinkedInActivity({ b, picking, selected, onToggle }) {
               <button key={k} role="tab" aria-selected={filter === k} className={`chipbtn${filter === k ? ' on' : ''}`} onClick={() => { setFilter(k); setLimit(12); }}>{label}</button>
             ))}
           </div>
-          {picking && <p className="pickhint">Choose up to 3 posts from the past year ({selected.length}/3). Fewer than 3 and the AI fills the rest. Older posts are under All time.</p>}
+          {picking && <p className="muted small">Posts older than 3 months are under All time.</p>}
           {shown.length === 0 ? <p className="muted small">No posts for this filter.</p> : (
             <ul className="feed">
               {shown.slice(0, limit).map((p) => {
@@ -718,7 +773,14 @@ function EngagementPlan({ b, slug, go, picking, selected, startPicking, stopPick
         <p className="muted">Picks three recent posts to engage with this week, then drafts a comment for each, a post for your own page, a connection request and a first DM to {chooseTargetName(b)}, grounded in the research and your <a href="/playbook" onClick={(e) => { e.preventDefault(); go({ page: 'playbook' }); }}>Playbook</a>.</p>
       )}
 
-      {o && (
+      {picking && (
+        <>
+          <p className="pickhint">Tick up to 3 posts in the feed below ({selected.length}/3), then redraft. Fewer than 3 and the AI fills the rest.</p>
+          {controls}
+        </>
+      )}
+
+      {o && !picking && (
         <>
           {o.playbook_status === 'seed' && (
             <p className="note-line">Drafted from the seed Playbook. Add your own example comments and DMs in <a href="/playbook" onClick={(e) => { e.preventDefault(); go({ page: 'playbook' }); }}>Playbook</a> to make the copy sound like you.</p>
@@ -737,7 +799,8 @@ function EngagementPlan({ b, slug, go, picking, selected, startPicking, stopPick
             </div>
           )}
 
-          <h3 className="plan-step">1. {o.picks.length === 0 ? 'Posts to engage with' : o.picks.length === 1 ? 'Engage with this post' : `Engage with these ${o.picks.length === 3 ? 'three' : 'two'} posts`}</h3>
+          <details className="plan-sec" open>
+          <summary><h3 className="plan-step">1. {o.picks.length === 0 ? 'Posts to engage with' : o.picks.length === 1 ? 'Engage with this post' : `Engage with these ${o.picks.length === 3 ? 'three' : 'two'} posts`}</h3><span className="muted small">{o.picks.length} comment{o.picks.length === 1 ? '' : 's'}</span></summary>
           {o.picks.length < 3 && (
             <p className="note-line">
               {o.picks.length === 0 ? 'No posts with text from the past year, so there is nothing to comment on yet. ' : `Only ${o.picks.length} post${o.picks.length === 1 ? '' : 's'} with text from the past year. `}
@@ -763,20 +826,26 @@ function EngagementPlan({ b, slug, go, picking, selected, startPicking, stopPick
             ))}
           </div>
 
-          <h3 className="plan-step">2. Post this on your own page</h3>
+          </details>
+
+          <details className="plan-sec" open>
+          <summary><h3 className="plan-step">2. Post this on your own page</h3><span className="muted small">never names the brand</span></summary>
           <Draft title="Your post" sub="Never names the brand" text={o.own_post.text} ids={o.own_post.evidence} index={o.evidence}
             extra={o.own_post.needs_proof && <p className="note-line">No {o.own_post.closest_category_used || 'same-category'} customer result with a number is in the Playbook yet, so the numbers here come from other categories. Add one in Playbook if you have it.</p>} />
 
-          <h3 className="plan-step">3. Connect{o.outreach?.length > 1 ? ' and work up' : ''}</h3>
+          </details>
+
+          <details className="plan-sec" open>
+          <summary><h3 className="plan-step">3. Connect{(o.outreach || []).length > 1 ? ' and work up' : ''}</h3><span className="muted small">{(o.outreach || legacyOutreach(o)).length} {(o.outreach || legacyOutreach(o)).length === 1 ? 'person' : 'people'} · open each one for their messages</span></summary>
           {(o.outreach || legacyOutreach(o)).map((p) => (
-            <div key={p.name} className={`outreach r-${p.role}`}>
-              <div className="outreach-head">
+            <details key={p.name} className={`outreach r-${p.role}`}>
+              <summary className="outreach-head">
                 <strong>{p.name}</strong>
                 {p.role === 'wedge' && !p.fallback ? <span className="badge">Wedge persona</span> : p.role === 'bridge' ? <span className="kind">Team · bridge</span> : <span className="kind">Most senior found</span>}
                 {p.track && <span className={`track t-${p.track}`}>{p.track === 'pdf' ? 'PDF' : 'Loom'}</span>}
-                {p.linkedin_url && <a href={p.linkedin_url} target="_blank" rel="noreferrer">LinkedIn</a>}
-              </div>
-              <p className="muted small target">{p.title}{p.role === 'wedge' && PERSONA_TEXT[p.persona] ? ` · ${PERSONA_TEXT[p.persona]}` : ''}</p>
+                <span className="muted small outreach-title">{p.title}{p.role === 'wedge' && PERSONA_TEXT[p.persona] ? ` · ${PERSONA_TEXT[p.persona]}` : ''}</span>
+                {p.linkedin_url && <a href={p.linkedin_url} target="_blank" rel="noreferrer" onClick={(e) => e.stopPropagation()}>LinkedIn</a>}
+              </summary>
               {p.track_reason && <p className="why"><span>Why {p.track === 'pdf' ? 'the PDF' : 'a Loom'}:</span> {p.track_reason}.</p>}
               {p.why && <p className="why">{p.why}</p>}
               <Draft title={p.track ? `Connection request (offers the ${p.asset || (p.track === 'pdf' ? 'PDF' : 'Loom')})` : 'Connection request'} sub={`${p.connection.chars}/${p.connection.limit} characters`} text={p.connection.text} ids={p.connection.evidence} index={o.evidence} />
@@ -788,14 +857,15 @@ function EngagementPlan({ b, slug, go, picking, selected, startPicking, stopPick
                   <Evidence ids={[...new Set(x.bullets.flatMap((bl) => bl.evidence))]} index={o.evidence} />
                 </div>
               ))}
-            </div>
+            </details>
           ))}
+          </details>
 
           {o.notes_for_ben && <p className="note-line"><strong>Notes:</strong> {o.notes_for_ben}</p>}
           <p className="muted small">Drafted {day(d.finished_at)} with {d.model} · {usd(d.cost_usd)}</p>
         </>
       )}
-      {controls}
+      {!picking && controls}
     </div>
   );
 }

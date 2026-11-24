@@ -433,3 +433,34 @@ a.ev:hover { border-color: var(--green); color: var(--green-ink); }
 .trackbox { border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px 2px; margin-top: 12px; }
 .trackbox h3 { display: flex; align-items: center; gap: 8px; font: 600 14px var(--sans); margin: 0 0 10px; }
 .why span { font-weight: 600; color: var(--ink); }
+
+/* account page: numbers strip + tabs */
+.strip { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; margin: 0 0 16px; }
+.stripcell { all: unset; box-sizing: border-box; cursor: pointer; background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 10px 14px; display: grid; gap: 2px; min-width: 0; }
+.stripcell:hover { border-color: var(--green); }
+.stripcell:focus-visible { outline: 2px solid var(--green); outline-offset: 2px; }
+.stripcell strong { font: 400 22px/1.2 var(--serif); color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.stripcell span { font-size: 12px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.stripcell.is-ok strong { color: var(--green-ink); }
+.stripcell.is-warn strong { color: var(--warn); }
+.stripcell.is-bad strong { color: var(--bad); }
+.tabs { position: sticky; top: 0; z-index: 5; display: flex; gap: 4px; margin: 0 -4px 16px; padding: 8px 4px; background: var(--paper); border-bottom: 1px solid var(--line); overflow-x: auto; }
+.tabbtn { display: inline-flex; align-items: center; gap: 6px; padding: 7px 14px; border-radius: 999px; font: 500 13.5px var(--sans); color: var(--ink-2); white-space: nowrap; text-decoration: none !important; }
+.tabbtn:hover { background: var(--card); color: var(--ink); }
+.tabbtn.on { background: var(--ink); color: var(--card); }
+.tabcount { font-size: 11px; min-width: 18px; padding: 0 6px; border-radius: 999px; background: var(--line); color: var(--ink-2); text-align: center; }
+.tabbtn.on .tabcount { background: var(--green); color: #fff; }
+@media (max-width: 760px) { .strip { grid-template-columns: repeat(2, minmax(0, 1fr)); } .stripcell:last-child { grid-column: 1 / -1; } }
+
+/* plan: collapsible steps and people */
+.plan-sec { border-top: 1px solid var(--line); margin-top: 14px; padding-top: 2px; }
+.plan-sec > summary { list-style: none; cursor: pointer; display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.plan-sec > summary::-webkit-details-marker { display: none; }
+.plan-sec > summary .plan-step::before { content: '▸'; font: 14px var(--sans); color: var(--muted); margin-right: 8px; display: inline-block; transition: transform .15s; }
+.plan-sec[open] > summary .plan-step::before { transform: rotate(90deg); }
+details.outreach > summary { list-style: none; cursor: pointer; }
+details.outreach > summary::-webkit-details-marker { display: none; }
+details.outreach > summary strong::before { content: '▸'; font: 13px var(--sans); color: var(--muted); margin-right: 8px; display: inline-block; transition: transform .15s; }
+details.outreach[open] > summary strong::before { transform: rotate(90deg); }
+details.outreach[open] > summary { margin-bottom: 6px; }
+.outreach-title { flex: 1 1 200px; min-width: 0; }
