@@ -3,8 +3,14 @@
    tests. Every signal points at its receipt: a fact (with its source quote) or a person's
    job history from Apollo. */
 
+/* A LinkedIn post announcing an open role ("The Alani social team is hiring!"). It's a
+   signal that the workload is growing, not something to react to as content. */
+const HIRING = /\b(?:(?:we(?:'re| are)|is|are|now|team(?:'s)? (?:is )?)\s*hiring\b|hiring (?:a|an|for|our)\b|join (?:our|the|my) (?:\w+ ){0,2}team\b|open (?:role|roles|position|positions)\b|job opening|apply (?:below|here|now|today)\b|we(?:'re| are) looking for (?:a|an)\b)/i;
+export const isHiringPost = (text) => HIRING.test(String(text || ''));
+
 export const SIGNAL_GROUPS = [
   ['people', 'People moves', 'New seats and leadership changes'],
+  ['hiring', 'Hiring', 'Open roles posted on LinkedIn: a sign the workload is growing'],
   ['corporate', 'Corporate events', 'Acquisitions, stakes and ownership changes'],
   ['launch', 'Launches', 'New products and campaigns'],
   ['financial', 'Financial results', 'Reported numbers'],
@@ -43,6 +49,21 @@ export function buildSignals(bundle, now = new Date()) {
     if (CHANGE[group] && !CHANGE[group].test(f.claim || '')) continue;
     const date = parseDate(f.date);
     items.push({ group, date, text: f.claim, ref: { type: 'fact', fact: f } });
+  }
+  // Hiring posts from the team and the brand page, past year, one per post URL.
+  const seen = new Set();
+  const posts = [
+    ...(bundle?.stakeholders || []).flatMap((s) => (s.stakeholder_posts || []).map((p) => ({ url: p.url, posted_at: p.posted_at, text: p.text, author: s.full_name }))),
+    ...(bundle?.brandPosts || []).map((p) => ({ url: p.url, posted_at: p.posted_at, text: p.caption, author: `${bundle?.brand?.name || 'Brand'} page` })),
+  ];
+  for (const p of posts) {
+    if (!p.url || seen.has(p.url) || !isHiringPost(p.text)) continue;
+    const date = p.posted_at ? new Date(p.posted_at) : null;
+    const m = monthsAgo(date, now);
+    if (m === null || m < 0 || m > 12) continue;
+    seen.add(p.url);
+    const excerpt = String(p.text).replace(/\s+/g, ' ').trim();
+    items.push({ group: 'hiring', date, text: `${p.author} posted an opening: "${excerpt.length > 110 ? `${excerpt.slice(0, 110).trimEnd()}…` : excerpt}"`, ref: { type: 'post', post: p } });
   }
   for (const s of bundle?.stakeholders || []) {
     const date = parseDate(s.started_role_at);

@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { PERSONAS, PERSONA_LABEL } from './stakeholders.js';
 import { withinDays } from './linkedinPosts.js';
 import { detectIndustry, rankCaseStudies } from '../../shared/caseStudies.js';
+import { isHiringPost } from '../../shared/signals.js';
 
 /* Part 2: the warm-up + first touch. Picks three posts to engage with, then drafts a
    comment for each, one post for Ben's own page, a connection request and a first DM.
@@ -184,14 +185,17 @@ export function namesBrand(text, brandName) {
 
 /* Comments are one short, casual sentence: no follow-on sentences, no questions. */
 export const COMMENT_MAX_CHARS = 160;
-export function commentStyleProblems(text = '') {
+/* Hiring posts get up to two short sentences ("Hey, I personally don't need a job, but
+   it seems like your social media operations are getting heavy. Just DM'd."). */
+export function commentStyleProblems(text = '', { hiring = false } = {}) {
   const t = String(text).trim();
   const out = [];
   // Sentence ends: . ! ? followed by a space and more text.
   // Dotted abbreviations like "e.l.f." or "U.S." are not sentence ends.
   const plain = t.replace(/\b(?:[a-z]\.){2,}/gi, (m) => m.replace(/\./g, ''));
   const sentences = plain.split(/(?<=[.!?])\s+(?=\S)/).filter((x) => x.trim().length > 1);
-  if (sentences.length > 1) out.push(`${sentences.length} sentences; keep it to one short sentence`);
+  const maxSentences = hiring ? 2 : 1;
+  if (sentences.length > maxSentences) out.push(`${sentences.length} sentences; keep it to ${hiring ? 'two short sentences' : 'one short sentence'}`);
   if (t.length > COMMENT_MAX_CHARS) out.push(`${t.length} characters; keep it short (under ${COMMENT_MAX_CHARS})`);
   if (t.includes('?')) out.push('asks a question; comments are just a reaction, no questions');
   return out;
@@ -231,7 +235,7 @@ export function validateDraft(draft, { evidence, playbook, brandName, picks = []
 
   (draft.comments || []).forEach((c, i) => {
     check(`comment ${i + 1}`, c);
-    for (const issue of commentStyleProblems(c?.text)) problems.push({ where: `comment ${i + 1}`, issue });
+    for (const issue of commentStyleProblems(c?.text, { hiring: isHiringPost(evidence[c?.post_id]?.post?.text) })) problems.push({ where: `comment ${i + 1}`, issue });
     if (!picks.includes(c.post_id)) problems.push({ where: `comment ${i + 1}`, issue: `is for ${c.post_id}, which is not one of the picked posts` });
   });
   if ((draft.comments || []).length !== picks.length) problems.push({ where: 'comments', issue: `expected ${picks.length} comments, got ${(draft.comments || []).length}` });
@@ -451,6 +455,7 @@ ${playbookBlock(pb)}
 
 WHAT TO WRITE:
 1. comments: one per picked post (same post_id), and none if there are no picked posts. These are purely engagement, to introduce the sender's face to the brand: short, sweet and casual, like a real person scrolling LinkedIn. EXACTLY ONE sentence, short to medium (aim for under 20 words). React to the one thing a real person would notice; a light joke or a quirky line is welcome when it fits. Never recap or re-explain the post, never ask a question, never fish for results or metrics, no pitch, no Nectar mention, no links. Match the example comments.
+   HIRING POSTS (listed under HIRING POSTS in the brief) are job announcements. Don't react to the job ad or its wording. Read it as a sign their social workload is growing and say that casually, in up to two short sentences, like: "Hey, I personally don't need a job, but it seems like your social media operations are getting heavy. Just DM'd." Keep the same spirit in your own words.
 2. own_post: a LinkedIn post for the sender's own page this week. It must NOT name or tag the target brand or its people. Its job is credibility: when people at the account look at the sender's profile, they see that Nectar works with brands like theirs and gets results. If the playbook has an example post marked TEMPLATE, keep its wording and fill its slots. Use ONLY results from proof items. Nectar's company-wide results (proof items for "Nectar (all customers)") are always fine to use, credited to Nectar. Any customer-specific number must be credited to the customer it belongs to; you may name customers in the target's category even when they have no numbers. Set closest_category_used to the proof category you leaned on ("company" if you used only company-wide results).
 3. messages: exactly one set per person on the OUTREACH list (person_id = their person id), each with a connection note and a first DM. Each person has a CONNECTION TEMPLATE and a DM TEMPLATE from their track (PDF or Loom). KEEP THE TEMPLATE WORDING EXACTLY and only replace the {slots}; never mix a Loom template with a PDF one, never add sentences.
    - Use the SLOT VALUES given for each person where they exist. Fill any other slot from the evidence: {recent launch or campaign from their posts} = a few plain words naming something from their or their team's posts; {proof_customer} and {proof_result} = one proof item, credited to its customer.
@@ -554,6 +559,8 @@ ${outreachLines}
 
 PICKED POSTS (one comment each):
 ${pickIds.length ? evidenceLines(Object.fromEntries(pickIds.map((id) => [id, evidence[id]])), ['post']) : '(none: there are no posts with text from the past year, so write no comments)'}
+
+HIRING POSTS (among the picks): ${pickIds.filter((id) => isHiringPost(evidence[id]?.post?.text)).join(', ') || '(none)'}
 
 OTHER POSTS (context, citable):
 ${evidenceLines(Object.fromEntries(Object.entries(evidence).filter(([id, v]) => v.kind === 'post' && !pickIds.includes(id)).slice(0, 8)), ['post']) || '(none)'}

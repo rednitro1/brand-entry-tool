@@ -1068,7 +1068,7 @@ function Signals({ b }) {
                 <h3>{g.title}<span>{g.sub}</span></h3>
                 <ul>
                   {shown.map((i, n) => {
-                    const raw = i.ref.type === 'fact' ? i.ref.fact.date : i.ref.person.started_role_at;
+                    const raw = i.ref.type === 'fact' ? i.ref.fact.date : i.ref.type === 'post' ? String(i.ref.post.posted_at || '').slice(0, 10) : i.ref.person.started_role_at;
                     return (
                       <li key={n} className={i.older ? 'is-old' : ''}>
                         <span className="sig-date">{signalDate(raw)}{i.recent && <span className="sig-new">New</span>}</span>
@@ -1077,6 +1077,8 @@ function Signals({ b }) {
                           <span className="sig-src">
                             {i.ref.type === 'fact' ? (
                               <><Label value={i.ref.fact.label} /> <a href={i.ref.fact.url} target="_blank" rel="noreferrer" title={i.ref.fact.quote}>{hostname(i.ref.fact.url)}</a></>
+                            ) : i.ref.type === 'post' ? (
+                              <>LinkedIn post · <a href={i.ref.post.url} target="_blank" rel="noreferrer">Open post</a></>
                             ) : (
                               <>Apollo job history{i.ref.person.linkedin_url && <> · <a href={i.ref.person.linkedin_url} target="_blank" rel="noreferrer">LinkedIn</a></>}</>
                             )}

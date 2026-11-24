@@ -147,6 +147,7 @@ export const SEED_PLAYBOOK = {
       'Never name or tag the target brand in my own post.',
       'Comments react to what the post says; no pitch, no links, no mention of Nectar.',
       'Only state results from the proof library, credited to the right customer.',
+      "Hiring posts: don't react to the job ad. Read it as a sign their social workload is growing and say so casually, e.g. 'Hey, I personally don\'t need a job, but it seems like your social media operations are getting heavy. Just DM\'d.'",
     ],
   },
 };
