@@ -600,3 +600,9 @@ details.outreach[open] > summary { margin-bottom: 6px; }
 .draft-log > summary { cursor: pointer; font-size: 12.5px; color: var(--ink-2); }
 .draft-log[open] > summary { margin-bottom: 8px; }
 .sg-hiring { border-top-color: #e3b341; }
+
+/* stack decisions: tool list */
+.tool-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 10px; }
+.tool-item { display: flex; gap: 12px; align-items: flex-start; padding: 12px 14px; border: 1px solid var(--line); border-radius: 12px; min-width: 0; }
+.tool-item strong { display: block; font: 600 14px var(--sans); margin-bottom: 2px; }
+.tool-item span { font-size: 13px; line-height: 1.45; color: var(--ink-2); }

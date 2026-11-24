@@ -182,47 +182,19 @@ function FlowDiagram() {
   );
 }
 
-/* ------------------------------- decision cards ------------------------------ */
+/* ---------------------------------- tool list -------------------------------- */
 
-const DECISIONS = [
-  { t: 'firecrawl', title: 'Firecrawl', role: 'Search, page reading, and the gateway to HarvestAPI and Orbisearch.',
-    why: 'Cheap search and clean page text from one API, and one key reaches three data providers.',
-    cost: 'About 36 credits for a brand profile.',
-    learned: 'The plan allows about 11 requests a minute and a 429 once cost a key page. Calls now run 3 at a time and wait for the reset Firecrawl names, then retry.' },
-  { t: 'claude', title: 'Claude Opus 5.5 (research)', role: 'Reads the fetched pages and pulls out facts.',
-    why: 'Accuracy matters most here. Every fact must quote its page word for word, and the server checks the quote before the fact is kept.',
-    cost: 'About $0.40 a profile with Firecrawl (roughly 48k tokens in, 9k out).',
-    learned: 'Of 25 claims in one Alani Nu run, 25 passed the receipts check.' },
-  { t: 'claude', title: 'Claude Sonnet 5.5 (writing)', role: 'Picks posts and writes the comments, own post, connection notes and DMs.',
-    why: 'Writing from fixed templates and a proof library does not need Opus. Drafting is a button, so it only costs money when someone wants copy.',
-    cost: '$0.05 to $0.12 a draft.',
-    learned: 'The server rejects unsourced numbers, unknown evidence, banned phrases, over-length notes and multi-sentence comments, then allows one redraft.' },
-  { t: 'apollo', title: 'Apollo', role: 'Finds the wedge roles and the social team.',
-    why: 'Search is free. One match record has the name, LinkedIn URL, title and job history, so tenure needs no extra provider.',
-    cost: 'Free search; 1 credit per person revealed, max 6 a run, wedge roles only.',
-    learned: 'Search hides last names and LinkedIn URLs, and people are often filed under the parent company (Alani Nu under CELSIUS), so the tool also searches by brand name.' },
-  { t: 'prospeo', title: 'Prospeo', role: 'Fallback for wedge roles Apollo did not find.',
-    why: 'Returns the LinkedIn URL in the search result itself.',
-    cost: '1 credit per page with results; free when it finds nothing.',
-    learned: 'Exact-title filters return nothing unless titles match its own list, so it searches by domain and seniority and the tool classifies titles itself.' },
-  { t: 'apify', title: 'Apify', role: 'Profile stats for Instagram, TikTok and X.',
-    why: 'Mature profile scrapers that report their real cost on each run.',
-    cost: 'Billed per run; the tool records the actual charge.',
-    learned: "Alani Nu's Instagram is age-gated: followers come back, posts do not. X follower extraction is turned off, or it scrapes the whole follower list." },
-  { t: 'orbisearch', title: 'Orbisearch (via Firecrawl)', role: 'LinkedIn company followers and employee count.',
-    why: 'A plain fetch of the LinkedIn page shows no follower count.',
-    cost: 'Through the Firecrawl key.',
-    learned: 'Alani Nu: 74,397 followers and 673 employees.' },
-  { t: 'harvestapi', title: 'HarvestAPI (via Firecrawl)', role: "Public LinkedIn posts for each stakeholder and the brand's page.",
-    why: 'Read-only provider data. LinkedIn pages timed out in the browser, and no LinkedIn login is ever used.',
-    cost: '4 credits a call.',
-    learned: "Reposts aren't flagged (5 of Kira's 9 feed items were other people's posts), so they're detected from the author in the post URL." },
-  { t: 'supabase', title: 'Supabase', role: 'Stores everything: runs, the live log, research, the Playbook, drafts and spend.',
-    why: 'Runs live in Postgres, not memory, so a restart or deploy cannot lose one. Row-level security is on with no policies, so only the server key can read or write.',
-    learned: 'The Playbook is versioned: every save is a new row and the newest one is live.' },
-  { t: 'railway', title: 'Railway', role: 'One Express service serves the React app, the API and the background jobs.',
-    why: 'One deploy, one URL, and every provider key stays in its environment variables.',
-    learned: 'The fake test mode (recorded data, no spend) refuses to start on Railway.' },
+const TOOL_LIST = [
+  { t: 'firecrawl', name: 'Firecrawl', does: "Searches the web and reads pages: the brand's site, news and reports." },
+  { t: 'claude', name: 'Claude Opus 5.5', does: 'Pulls facts out of the pages it reads, each with a quote as its receipt.' },
+  { t: 'claude', name: 'Claude Sonnet 5.5', does: 'Picks the posts and writes the comments, own post, connection notes and DMs.' },
+  { t: 'apollo', name: 'Apollo', does: 'Finds the wedge personas and their team: name, title, LinkedIn and tenure.' },
+  { t: 'prospeo', name: 'Prospeo', does: 'Backup people search for roles Apollo misses.' },
+  { t: 'apify', name: 'Apify', does: 'Follower and post counts for Instagram, TikTok and X.' },
+  { t: 'orbisearch', name: 'Orbisearch', does: 'LinkedIn company followers and employee count, through Firecrawl.' },
+  { t: 'harvestapi', name: 'HarvestAPI', does: "Public LinkedIn posts from each person and the brand's page, through Firecrawl." },
+  { t: 'supabase', name: 'Supabase', does: 'Stores everything: research, people, posts, the Playbook, drafts and spend.' },
+  { t: 'railway', name: 'Railway', does: 'Hosts the app, the API and the background jobs.' },
 ];
 
 const GUARDRAILS = [
@@ -238,8 +210,20 @@ export function StackPage() {
     <section className="page">
       <header className="page-head">
         <h1>Stack Decisions</h1>
-        <p className="muted">How the Brand Entry Tool is built, what each tool does, and why it was picked.</p>
+        <p className="muted">The tools behind the Brand Entry Tool, and how information flows through them.</p>
       </header>
+
+      <div className="card">
+        <h2>The tools</h2>
+        <div className="tool-list">
+          {TOOL_LIST.map((x) => (
+            <div key={x.name} className="tool-item">
+              <Logo t={x.t} size={32} />
+              <div><strong>{x.name}</strong><span>{x.does}</span></div>
+            </div>
+          ))}
+        </div>
+      </div>
 
       <div className="card">
         <div className="card-head"><h2>How information flows</h2><span className="muted small">From a brand name to copy you send yourself</span></div>
@@ -251,20 +235,6 @@ export function StackPage() {
         <div className="guardrails">
           {GUARDRAILS.map(([t, d]) => <div key={t} className="guard"><strong>{t}</strong><span>{d}</span></div>)}
         </div>
-      </div>
-
-      <h2 className="section-title">Each tool, and why</h2>
-      <div className="decisions">
-        {DECISIONS.map((d) => (
-          <div key={d.title} className="card decision">
-            <div className="decision-head"><Logo t={d.t} size={32} /><div><h3>{d.title}</h3><p>{d.role}</p></div></div>
-            <dl>
-              <dt>Why</dt><dd>{d.why}</dd>
-              {d.cost && <><dt>Cost</dt><dd>{d.cost}</dd></>}
-              <dt>Learned</dt><dd>{d.learned}</dd>
-            </dl>
-          </div>
-        ))}
       </div>
     </section>
   );
