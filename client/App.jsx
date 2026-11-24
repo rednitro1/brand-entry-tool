@@ -455,13 +455,13 @@ function AccountPage({ slug, tab, go, live }) {
 
       {tab === 'overview' && (
         <>
-          <Signals b={b} />
           {profile && (profile.summary || []).length > 0 && (
             <div className="card">
               <h2>Summary</h2>
               <Summary points={profile.summary} factById={factById} />
             </div>
           )}
+          <Signals b={b} />
           <div className="card">
             <h2>Social pages</h2>
             <div className="socials">
