@@ -965,8 +965,11 @@ function Signals({ b }) {
       ) : (
         <div className="signal-groups">
           {groups.map((g) => {
-            const older = g.items.filter((i) => i.older);
-            const shown = showOld[g.key] ? g.items : g.items.filter((i) => !i.older);
+            // Three at a time; the rest (and anything over 2 years old) open on click.
+            const open = showOld[g.key];
+            const recent = g.items.filter((i) => !i.older);
+            const shown = open ? g.items : (recent.length ? recent : g.items).slice(0, 3);
+            const hidden = g.items.length - shown.length;
             return (
               <section key={g.key} className={`signal-group sg-${g.key}`}>
                 <h3>{g.title}<span>{g.sub}</span></h3>
@@ -990,9 +993,9 @@ function Signals({ b }) {
                     );
                   })}
                 </ul>
-                {older.length > 0 && (
-                  <button className="link more" onClick={() => setShowOld((o) => ({ ...o, [g.key]: !o[g.key] }))}>
-                    {showOld[g.key] ? 'Hide older' : `Show ${older.length} older`}
+                {(hidden > 0 || open) && (
+                  <button className="sig-toggle" aria-expanded={Boolean(open)} onClick={() => setShowOld((o) => ({ ...o, [g.key]: !o[g.key] }))}>
+                    <span aria-hidden="true">{open ? '▴' : '▾'}</span> {open ? 'Show fewer' : `Show ${hidden} more`}
                   </button>
                 )}
               </section>

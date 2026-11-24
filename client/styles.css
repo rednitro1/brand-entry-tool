@@ -582,3 +582,5 @@ details.outreach[open] > summary { margin-bottom: 6px; }
 .sig-new { font: 700 10px var(--sans); letter-spacing: .05em; text-transform: uppercase; padding: 1px 6px; border-radius: 999px; background: var(--green); color: #fff; }
 .sig-text { color: var(--ink); min-width: 0; }
 .sig-src { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 6px; margin-top: 3px; font-size: 12px; color: var(--muted); }
+.sig-toggle { margin-top: 10px; width: 100%; padding: 6px 10px; border: 1px dashed var(--line); border-radius: 8px; background: transparent; color: var(--ink-2); font: 500 12.5px var(--sans); cursor: pointer; text-align: left; }
+.sig-toggle:hover { border-color: var(--green); color: var(--ink); }
