@@ -396,12 +396,30 @@ export function templateAdherence(template, text) {
 
 /* Values the server can fill without the model: name, company, follower total, platforms,
    industry and same-space customers (with the proof ids to cite). */
+const listOf = (arr) => (arr.length <= 1 ? arr.join('') : `${arr.slice(0, -1).join(', ')} and ${arr.at(-1)}`);
+
+/* Fit a connection note under the character limit by naming fewer same-space customers
+   (3, then 2, then 1). The template wording never changes; only the list gets shorter.
+   Slots the model fills itself (e.g. a recent launch) are estimated at 30 characters. */
+export function fitSlotsToLimit(template, values, limit = 200) {
+  const fill = (v) => String(template || '').replace(/\{([^}]+)\}/g, (m, k) => (v[k] != null ? String(v[k]) : k.startsWith('recent') ? 'x'.repeat(30) : m));
+  let names = [...(values.customer_names || [])];
+  let ids = [...(values.customer_proof_ids || [])];
+  let out = values;
+  while (names.length > 1 && fill(out).length > limit) {
+    names = names.slice(0, -1);
+    ids = ids.slice(0, -1);
+    out = { ...out, customers_in_their_space: listOf(names), customer_names: names, customer_proof_ids: ids };
+  }
+  return out;
+}
+
 export function slotValues(bundle, person, playbook) {
   const PN = { instagram: 'Instagram', tiktok: 'TikTok', x: 'X' };
   const counted = (bundle.social || []).filter((s) => PN[s.platform] && s.followers);
   const total = counted.reduce((t, s) => t + Number(s.followers), 0);
   const round = (n) => (n >= 1e6 ? `${(n / 1e6).toFixed(1).replace(/\.0$/, '')}M` : n >= 1e3 ? `${Math.round(n / 1e3)}K` : String(n));
-  const list = (arr) => (arr.length <= 1 ? arr.join('') : `${arr.slice(0, -1).join(', ')} and ${arr.at(-1)}`);
+  const list = listOf;
   const industry = detectIndustry(bundle);
   const ranked = rankCaseStudies(playbook.proof || [], industry?.key);
   const pool = ranked.filter((c) => c.match).length ? ranked.filter((c) => c.match)
@@ -415,6 +433,7 @@ export function slotValues(bundle, person, playbook) {
     platforms: list(counted.map((s) => PN[s.platform])),
     industry: industry?.key || null,
     customers_in_their_space: list(customers.map((c) => c.customer)),
+    customer_names: customers.map((c) => c.customer),
     customer_proof_ids: customers.map((c) => `proof:${c.items[0].id}`), // one source per named customer
   };
 }
@@ -548,7 +567,7 @@ export async function draftEngagement({ bundle, playbook, claude, pickUrls = [],
   // Step 2: drafts, validated, with one retry that feeds the problems back.
   const outreachLines = outreach.map((o, i) => {
     const post = pickedPosts.find((p) => p.stakeholder_id === o.person.id);
-    const v = slotValues(bundle, o.person, playbook);
+    const v = fitSlotsToLimit(o.templates.connection, slotValues(bundle, o.person, playbook), playbook.rules?.connection_note_max || 200);
     return `[${outreachIds[i]}] ${o.role.toUpperCase()}: ${o.person.full_name}, ${o.person.title}${o.fallback ? ' (no wedge persona found; most senior team member)' : ''}${post ? ` (you are commenting on their post ${idOf(post.url)})` : ''}
   TRACK: ${o.track.toUpperCase()} (${o.asset})
   CONNECTION TEMPLATE: ${o.templates.connection}

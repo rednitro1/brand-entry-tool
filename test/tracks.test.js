@@ -49,9 +49,9 @@ test('chooseTemplates: each person gets a note and DM from their OWN track, rota
 
 test('templateAdherence: filled template passes; a reworded one fails', () => {
   const t = DEFAULT_TRACKS.pdf.connection_notes[0];
-  const filled = 'Hi Sydney, 1.8M followers across Instagram and TikTok is a big responsibility. Could I share a short resource on how we work with beverage brands like Liquid Death and OLIPOP?';
+  const filled = 'Hi Sydney, 1.8M followers across Instagram and TikTok is a lot to manage. Could I share a short resource on how we help beverage brands like Liquid Death and OLIPOP save time on social media admin?';
   assert.equal(templateAdherence(t, filled), true);
-  assert.equal(templateAdherence(t, filled.replace('is a big responsibility', 'is huge')), false);
+  assert.equal(templateAdherence(t, filled.replace('is a lot to manage', 'is huge')), false);
   assert.equal(templateAdherence(t, filled.replace('Could I share a short resource', 'Can I share a 1-minute Loom')), false, 'a Loom offer cannot pass as the PDF template');
 });
 
@@ -77,4 +77,22 @@ test('an old Playbook saved before tracks existed still parses, with default tra
   const pb = parsePlaybook(old);
   assert.equal(pb.tracks.pdf.first_dms.length, 2);
   assert.match(pb.rules.dm_cta, /15 minutes/);
+});
+
+test('fitSlotsToLimit: names fewer customers until the connection note fits 200 characters', async () => {
+  const { fitSlotsToLimit } = await import('../server/modules/engagement.js');
+  const t = DEFAULT_TRACKS.pdf.connection_notes[0];
+  const v = {
+    first_name: 'Jacqueline', total_followers: '17.9M', platforms: 'Instagram, TikTok and X', industry: 'beauty',
+    customers_in_their_space: 'e.l.f. Beauty, Jones Road Beauty and Glamnetic',
+    customer_names: ['e.l.f. Beauty', 'Jones Road Beauty', 'Glamnetic'], customer_proof_ids: ['proof:p3', 'proof:p6', 'proof:p8'],
+  };
+  const fill = (x) => t.replace(/\{([^}]+)\}/g, (m, k) => x[k] ?? m);
+  assert.ok(fill(v).length > 200, 'three customers is too long');
+  const fit = fitSlotsToLimit(t, v, 200);
+  assert.ok(fill(fit).length <= 200, fill(fit));
+  assert.deepEqual(fit.customer_proof_ids, fit.customer_names.map((n) => v.customer_proof_ids[v.customer_names.indexOf(n)]), 'proof ids stay paired with the names kept');
+  assert.equal(fit.customer_names[0], 'e.l.f. Beauty', 'drops from the end, keeps the best match');
+  const short = { ...v, platforms: 'TikTok', first_name: 'Al', total_followers: '1M', customer_names: ['A', 'B'], customers_in_their_space: 'A and B', customer_proof_ids: ['p1', 'p2'] };
+  assert.equal(fitSlotsToLimit(t, short, 200), short, 'already fits: unchanged');
 });

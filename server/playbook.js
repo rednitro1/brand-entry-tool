@@ -26,26 +26,27 @@ const TrackSchema = z.object({
 const DEFAULT_CTA = "If you have 15 minutes, happy to show how we'd do this for {company} in our platform.";
 
 export const DEFAULT_TRACKS = {
+  // Lead with the value: we save social teams time on social media admin.
   pdf: {
     asset: 'resource PDF',
     connection_notes: [
-      'Hi {first_name}, {total_followers} followers across {platforms} is a big responsibility. Could I share a short resource on how we work with {industry} brands like {customers_in_their_space}?',
-      'Hi {first_name}, could I share a resource outlining how we help {industry} brands like {customers_in_their_space} on social?',
+      'Hi {first_name}, {total_followers} followers across {platforms} is a lot to manage. Could I share a short resource on how we help {industry} brands like {customers_in_their_space} save time on social media admin?',
+      'Hi {first_name}, could I share a resource on how we help {industry} brands like {customers_in_their_space} save time on social media admin?',
     ],
     first_dms: [
-      "Hi {first_name}, just sent the PDF over: [PDF, placeholder for this exercise]. It covers how we've helped brands like {proof_customer} with {proof_result}. If you have 15 minutes, happy to show how we'd do this for {company} in our platform.",
-      "Hi {first_name}, here's the resource: [PDF, placeholder for this exercise]. The short version: {proof_customer} {proof_result}. If you have 15 minutes, happy to walk through how we'd do this for {company} in our platform.",
+      "Hi {first_name}, just sent the PDF over: [PDF, placeholder for this exercise]. It covers how we help {industry} brands like {customers_in_their_space} save time on social media admin, and what that looks like in numbers: {proof_customer} {proof_result}. If you have 15 minutes, happy to show how we'd do this for {company} in our platform.",
+      "Hi {first_name}, here's the resource: [PDF, placeholder for this exercise]. The short version: we save social teams time on social media admin. {proof_customer} {proof_result}. If you have 15 minutes, happy to walk through how we'd do this for {company} in our platform.",
     ],
   },
   loom: {
     asset: '1-minute Loom',
     connection_notes: [
-      'Hi {first_name}, {total_followers} followers across {platforms} is a big responsibility. Can I share a 1-minute Loom on how we work with {industry} brands like {customers_in_their_space}?',
-      "Hi {first_name}, saw your team's {recent launch or campaign from their posts}. Can I share a 1-minute Loom on how we work with {industry} brands like {customers_in_their_space}?",
+      'Hi {first_name}, {total_followers} followers across {platforms} is a lot to manage. Can I share a 1-minute Loom on how we help {industry} brands like {customers_in_their_space} save time on social media admin?',
+      "Hi {first_name}, saw your team's {recent launch or campaign from their posts}. Can I share a 1-minute Loom on how we help {industry} brands like {customers_in_their_space} save time on social media admin?",
     ],
     first_dms: [
-      "Hi {first_name}, here's the 1-minute Loom: [Loom link, placeholder for this exercise]. It shows how we'd help your team keep up with comments and DMs across {platforms}. If you have 15 minutes, happy to show how we'd do this for {company} in our platform.",
-      "Hi {first_name}, as promised: [Loom link, placeholder for this exercise]. It covers how {proof_customer} {proof_result}, and what that could look like for {company}. If you have 15 minutes, happy to show how we'd do this for {company} in our platform.",
+      "Hi {first_name}, here's the 1-minute Loom: [Loom link, placeholder for this exercise]. It shows how we'd help your team save time on social media admin across {platforms}. If you have 15 minutes, happy to show how we'd do this for {company} in our platform.",
+      "Hi {first_name}, as promised: [Loom link, placeholder for this exercise]. It covers how {proof_customer} {proof_result}, and how much time that could save your team at {company}. If you have 15 minutes, happy to show how we'd do this for {company} in our platform.",
     ],
   },
 };
