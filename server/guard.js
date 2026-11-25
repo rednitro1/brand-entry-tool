@@ -46,3 +46,28 @@ export function checkSpendCap({ spentTodayUsd, activeRuns, capUsd, reservePerRun
   }
   return { ok: true, committed };
 }
+
+/* Login sessions: the access code is entered once, then a signed cookie carries the
+   session. The key is derived from the access code, so changing the code logs everyone
+   out. Token = "<expiry ms>.<hmac>"; nothing secret is stored in the browser. */
+export function sessionKey(accessCode, secret = '') {
+  return crypto.createHash('sha256').update(`session:${secret}:${accessCode || ''}`).digest();
+}
+export function makeSession(key, { now = Date.now(), ttlMs = 7 * 864e5 } = {}) {
+  const exp = String(now + ttlMs);
+  return `${exp}.${crypto.createHmac('sha256', key).update(exp).digest('hex')}`;
+}
+export function verifySession(token, key, { now = Date.now() } = {}) {
+  const m = /^(\d{10,16})\.([0-9a-f]{64})$/.exec(String(token || ''));
+  if (!m || !key || Number(m[1]) < now) return false;
+  const want = crypto.createHmac('sha256', key).update(m[1]).digest();
+  const got = Buffer.from(m[2], 'hex');
+  return got.length === want.length && crypto.timingSafeEqual(got, want);
+}
+export function readCookie(header, name) {
+  for (const part of String(header || '').split(';')) {
+    const i = part.indexOf('=');
+    if (i > 0 && part.slice(0, i).trim() === name) return decodeURIComponent(part.slice(i + 1).trim());
+  }
+  return null;
+}

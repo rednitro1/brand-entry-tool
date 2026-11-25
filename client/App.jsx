@@ -59,7 +59,47 @@ function pathFor(r) {
   return '/';
 }
 
+/* Login gate: paste the access code once, then the whole tool opens. */
 export default function App() {
+  const [authed, setAuthed] = useState(null); // null = checking
+  useEffect(() => {
+    api.session().then((r) => setAuthed(Boolean(r.authed))).catch(() => setAuthed(false));
+    const onExpired = () => setAuthed(false);
+    window.addEventListener('auth-required', onExpired);
+    return () => window.removeEventListener('auth-required', onExpired);
+  }, []);
+  if (authed === null) return <div className="login-wrap" />;
+  if (!authed) return <LoginPage onIn={() => setAuthed(true)} />;
+  return <Shell />;
+}
+
+function LoginPage({ onIn }) {
+  const [code, setCode] = useState('');
+  const [err, setErr] = useState('');
+  const [busy, setBusy] = useState(false);
+  async function submit(e) {
+    e.preventDefault();
+    setErr(''); setBusy(true);
+    try { await api.login(code.trim()); onIn(); } catch (ex) { setErr(ex.message); } finally { setBusy(false); }
+  }
+  return (
+    <div className="login-wrap">
+      <form className="login-card" onSubmit={submit}>
+        <img src="/nectar-logo-on-dark.svg" alt="Nectar" width="110" height="26" />
+        <h1>Brand Entry Tool</h1>
+        <p className="muted">Paste the access code to get in.</p>
+        <div className="login-row">
+          <input value={code} onChange={(e) => setCode(e.target.value)} type="password" autoComplete="off" autoFocus
+            placeholder="Access code" aria-label="Access code" />
+          <button type="submit" className="pill" disabled={busy || !code.trim()}>{busy ? 'Checking…' : 'Go'}</button>
+        </div>
+        {err && <p className="error">{err}</p>}
+      </form>
+    </div>
+  );
+}
+
+function Shell() {
   const [route, setRoute] = useState(currentRoute());
   const go = useCallback((r) => {
     window.history.pushState({}, '', pathFor(r));
@@ -182,8 +222,6 @@ const clock = (s) => `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s 
 
 function SearchPage({ go, live }) {
   const [input, setInput] = useState('');
-  const [code, setCode] = useState(safeStore.get('accessCode'));
-  const [showCode, setShowCode] = useState(!safeStore.get('accessCode'));
   const [err, setErr] = useState('');
   const [busy, setBusy] = useState(false);
 
@@ -191,12 +229,10 @@ function SearchPage({ go, live }) {
     e.preventDefault();
     setErr(''); setBusy(true);
     try {
-      safeStore.set('accessCode', code);
-      const r = await api.startRun(input, code);
+      const r = await api.startRun(input);
       live.start(r.runId, input.trim());
     } catch (ex) {
       setErr(ex.message);
-      if (ex.status === 401) setShowCode(true);
     } finally { setBusy(false); }
   }
 
@@ -213,14 +249,8 @@ function SearchPage({ go, live }) {
                 placeholder="Brand name or LinkedIn company URL" aria-label="Brand name or LinkedIn company URL" maxLength={200} required />
               <button type="submit" className="pill" disabled={busy || !input.trim()}>{busy ? 'Starting…' : 'Research'}</button>
             </div>
-            {showCode ? (
-              <input className="code" value={code} onChange={(e) => setCode(e.target.value)} type="password" autoComplete="off"
-                placeholder="Access code" aria-label="Access code" />
-            ) : (
-              <button type="button" className="link" onClick={() => setShowCode(true)}>Change access code</button>
-            )}
             {err && <p className="error">{err}</p>}
-            <p className="hint">Live runs take 1 to 3 minutes and need an access code. You can switch tabs while one runs. Past research is open to everyone under <a href="/accounts" onClick={(e) => { e.preventDefault(); go({ page: 'accounts' }); }}>Accounts</a>.</p>
+            <p className="hint">Live runs take 1 to 3 minutes. You can switch tabs while one runs. Past research is under <a href="/accounts" onClick={(e) => { e.preventDefault(); go({ page: 'accounts' }); }}>Accounts</a>.</p>
           </form>
         ) : (
           <RunConsole live={live} go={go} />
@@ -737,7 +767,6 @@ function Draft({ title, sub, text, ids, index, extra }) {
 }
 
 function EngagementPlan({ b, slug, go, picking, selected, startPicking, stopPicking, onStarted }) {
-  const [code, setCode] = useState(safeStore.get('accessCode'));
   const [err, setErr] = useState('');
   const [busy, setBusy] = useState(false);
   const d = b.draft;
@@ -746,12 +775,11 @@ function EngagementPlan({ b, slug, go, picking, selected, startPicking, stopPick
 
   async function start(pickUrls = []) {
     setErr(''); setBusy(true);
-    try { safeStore.set('accessCode', code); await api.draft(slug, pickUrls, code); onStarted(); } catch (ex) { setErr(ex.message); } finally { setBusy(false); }
+    try { await api.draft(slug, pickUrls); onStarted(); } catch (ex) { setErr(ex.message); } finally { setBusy(false); }
   }
 
   const controls = (
     <div className="plan-actions">
-      {!code && <input className="code" value={code} onChange={(e) => setCode(e.target.value)} type="password" placeholder="Access code" aria-label="Access code" />}
       {picking ? (
         <>
           <button className="pill" disabled={busy || running} onClick={() => start(selected)}>{busy ? 'Starting…' : selected.length === 0 ? 'Redraft with AI picks' : selected.length === 1 ? 'Redraft with your pick' : `Redraft with your ${selected.length} picks`}</button>
@@ -1203,7 +1231,6 @@ function PlaybookPage() {
   const [meta, setMeta] = useState(null);
   const [err, setErr] = useState('');
   const [msg, setMsg] = useState('');
-  const [code, setCode] = useState(safeStore.get('accessCode'));
   const [busy, setBusy] = useState(false);
   const [dirty, setDirty] = useState(false);
   const [added, setAdded] = useState([]); // proof entries added this visit start open
@@ -1223,9 +1250,8 @@ function PlaybookPage() {
   async function save(markReviewed) {
     setErr(''); setMsg(''); setBusy(true);
     try {
-      safeStore.set('accessCode', code);
       const content = { ...cleanPlaybook(pb), status: markReviewed ? 'reviewed' : pb.status };
-      const r = await api.savePlaybook(content, code);
+      const r = await api.savePlaybook(content);
       setPb(r.content); setMeta(r); setDirty(false); setMsg('Saved. New drafts use this version.');
     } catch (ex) { setErr(ex.message); } finally { setBusy(false); }
   }
@@ -1331,7 +1357,6 @@ function PlaybookPage() {
       </Section>
 
       <div className="savebar">
-        {!code && <input className="code" value={code} onChange={(e) => setCode(e.target.value)} type="password" placeholder="Access code" aria-label="Access code" />}
         <button className="pill" disabled={busy} onClick={() => save(false)}>{busy ? 'Saving…' : 'Save'}</button>
         {pb.status === 'seed' && <button className="pill ghost" disabled={busy} onClick={() => save(true)}>Save and mark reviewed</button>}
         {dirty && <span className="muted small">Unsaved changes</span>}

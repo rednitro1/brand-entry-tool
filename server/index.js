@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { loadEnv } from './env.js';
-import { hashIp, checkAccessCode, makeRateLimiter, checkSpendCap } from './guard.js';
+import { hashIp, checkAccessCode, makeRateLimiter, checkSpendCap, sessionKey, makeSession, verifySession, readCookie } from './guard.js';
 import { parseInput } from './modules/resolve.js';
 
 loadEnv();
@@ -57,6 +57,35 @@ const wrap = (fn) => (req, res) => fn(req, res).catch((err) => {
 
 app.get('/health', (_req, res) => res.json({ ok: true, at: new Date().toISOString() }));
 
+/* Login gate: the access code is pasted once (POST /api/login), which sets a signed,
+   httpOnly session cookie. Every other /api route needs that session (or the code in an
+   x-access-code header, for scripts). Wrong guesses are rate-limited per visitor. */
+const SESSION_COOKIE = 'bet_session';
+const SESSION_TTL_MS = 7 * 864e5;
+const SECURE_COOKIE = Boolean(process.env.RAILWAY_ENVIRONMENT || process.env.NODE_ENV === 'production');
+const sessKey = RUN_ACCESS_CODE ? sessionKey(RUN_ACCESS_CODE, process.env.SESSION_SECRET || IP_HASH_SALT || '') : null;
+const loginLimit = makeRateLimiter({ limit: 10, windowMs: 15 * 60 * 1000 });
+const isAuthed = (req) => (sessKey && verifySession(readCookie(req.headers.cookie, SESSION_COOKIE), sessKey))
+  || (Boolean(req.get('x-access-code')) && checkAccessCode(req.get('x-access-code'), RUN_ACCESS_CODE).ok);
+
+app.get('/api/session', (req, res) => res.json({ authed: Boolean(isAuthed(req)) }));
+
+app.post('/api/login', (req, res) => {
+  const rl = loginLimit(hashIp(req.ip, IP_HASH_SALT));
+  if (!rl.ok) return res.status(429).json({ error: 'Too many tries. Wait a few minutes and try again.' });
+  const code = checkAccessCode(String(req.body?.code || '').trim(), RUN_ACCESS_CODE);
+  if (!code.ok) return res.status(code.status).json({ error: code.status === 401 ? "That access code isn't right." : code.error });
+  res.setHeader('Set-Cookie', `${SESSION_COOKIE}=${makeSession(sessKey, { ttlMs: SESSION_TTL_MS })}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${SESSION_TTL_MS / 1000}${SECURE_COOKIE ? '; Secure' : ''}`);
+  res.json({ ok: true });
+});
+
+app.post('/api/logout', (_req, res) => {
+  res.setHeader('Set-Cookie', `${SESSION_COOKIE}=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0${SECURE_COOKIE ? '; Secure' : ''}`);
+  res.json({ ok: true });
+});
+
+app.use('/api', (req, res, next) => (isAuthed(req) ? next() : res.status(401).json({ error: 'Log in with the access code first.', login: true })));
+
 app.get('/api/brands', wrap(async (_req, res) => res.json(await db.listBrands())));
 
 app.get('/api/brands/:slug', wrap(async (req, res) => {
@@ -78,12 +107,9 @@ app.get('/api/runs/:id', wrap(async (req, res) => {
   res.json(run);
 }));
 
-/* Start a live run. Cheap checks first; the rate-limit slot is only consumed once the
-   access code is valid, so a wrong code can't lock a visitor out. */
+/* Start a live run (behind the login gate). Cheap checks first; the rate-limit slot is
+   only consumed once the input is valid. */
 app.post('/api/runs', wrap(async (req, res) => {
-  const code = checkAccessCode(req.get('x-access-code') || req.body?.accessCode, RUN_ACCESS_CODE);
-  if (!code.ok) return res.status(code.status).json({ error: code.error });
-
   const input = String(req.body?.input || '').trim();
   if (!input || input.length > 200) return res.status(400).json({ error: 'Enter a brand name or a LinkedIn company URL.' });
   // Reject input the run would fail on anyway, before it costs a run or a rate-limit slot.
@@ -107,12 +133,10 @@ app.post('/api/runs', wrap(async (req, res) => {
   res.status(202).json({ runId: run.id });
 }));
 
-/* Playbook: open to read; saving needs the access code and creates a new version. */
+/* Playbook: reading and saving are behind the login gate; each save is a new version. */
 app.get('/api/playbook', wrap(async (_req, res) => res.json(await currentPlaybook(db))));
 
 app.post('/api/playbook', wrap(async (req, res) => {
-  const code = checkAccessCode(req.get('x-access-code'), RUN_ACCESS_CODE);
-  if (!code.ok) return res.status(code.status).json({ error: code.error });
   const rl = saveLimit(hashIp(req.ip, IP_HASH_SALT));
   if (!rl.ok) return res.status(rl.status).json({ error: rl.error });
   let content;
@@ -124,10 +148,8 @@ app.post('/api/playbook', wrap(async (req, res) => {
   res.json({ id: row.id, content: row.content, saved: true, created_at: row.created_at });
 }));
 
-/* Draft an engagement plan for an account. Same guards as a run: code, spend cap, rate limit. */
+/* Draft an engagement plan for an account. Same guards as a run: login, spend cap, rate limit. */
 app.post('/api/brands/:slug/engagement', wrap(async (req, res) => {
-  const code = checkAccessCode(req.get('x-access-code'), RUN_ACCESS_CODE);
-  if (!code.ok) return res.status(code.status).json({ error: code.error });
   const slug = String(req.params.slug).slice(0, 80);
   const brand = await db.getBrandBySlug(slug);
   if (!brand) return res.status(404).json({ error: 'Brand not found.' });
